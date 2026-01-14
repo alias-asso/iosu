@@ -1,5 +1,5 @@
 :root {
-  --color-secondary: hsl(19, 95%, 45%);
+  --color-secondary: hsl(19, 92%, 45%);
   --color-tertiary: hsl(19, 100%, 93%);
   --color-accent: hsl(217, 100%, 48%);
   --color-accent-light: hsl(217, 100%, 65%);
@@ -39,7 +39,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: 0.5em;
 }
 
-h1 { font-size: 2em; font-weight: 800; }
+h1 { font-size: 2em; }
 h2 { font-size: 1.75em; }
 h3 { font-size: 1.5em; }
 
@@ -96,7 +96,31 @@ pre {
 form {
   display: inline-flex;
   flex-direction: row;
-  gap: 1rem;
+  gap: 2rem;
+}
+form.larger {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+}
+form.larger > * {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+form.larger > .reverse {
+  width: 100%;
+
+  flex-direction: row;
+  gap: 2rem;
+}
+form.larger > .reverse > * {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 input {
@@ -104,6 +128,15 @@ input {
 
   font-size: 1rem;
   line-height: 1.4em;
+
+  border: 2px black solid;
+
+  transition: .3s ease;
+}
+input:focus {
+  box-shadow: 0.3em -0.3em 0 var(--color-accent-light);
+  border: 2px var(--color-secondary) solid;
+  outline: none;
 }
 
 button {
@@ -153,6 +186,7 @@ button {
   align-items: center;
 }
 .btns.center { justify-content: center; }
+.btns.no-marge { margin: 0; }
 
 .response {
   margin: 1rem 0;
@@ -199,7 +233,7 @@ header .content .btn:hover {
 }
 
 nav {
-  padding: 1rem 2rem;
+  padding: 1rem 4rem;
 
   background: var(--color-secondary);
   border-bottom: 4px black solid;
@@ -213,6 +247,8 @@ nav {
 }
 
 nav h1 { margin-bottom: -0.3em; }
+nav h1 a { color: #fff; }
+nav h1 a:hover { text-decoration: none; }
 
 nav ul { 
   margin-top: 0.2em;
