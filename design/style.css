@@ -71,7 +71,10 @@ li {
   margin-bottom: 0.25rem;
 }
 
-img { width: 100%; }
+img {
+  width: 100%;
+  border: 2px black solid;
+}
 
 code { 
   font-family: monospace;
@@ -239,6 +242,11 @@ main {
 }
 main.larger {
   max-width: var(--header-max-width);
+}
+main.flex {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
 
 footer {
