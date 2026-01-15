@@ -10,6 +10,12 @@
   --content-max-width: 900px;
   --header-max-width: calc(var(--content-max-width) + 200px);
 
+  --border-base-size: 2px;
+  --border-container-size: calc(2 * var(--border-base-size));
+  --border-header-size: calc(2 * var(--border-container-size));
+  --border-color: #000;
+  --border-color-accent: var(--color-secondary);
+
   font-size: 20px;
 }
 
@@ -73,7 +79,7 @@ li {
 
 img {
   width: 100%;
-  border: 2px black solid;
+  border: var(--border-base-size) var(--border-color) solid;
 }
 
 code { 
@@ -104,18 +110,18 @@ form.larger {
   display: flex;
   flex-direction: column;
 }
-form.larger > * {
+form.larger > div {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-form.larger > .reverse {
+form.larger > .form--reverse {
   width: 100%;
 
   flex-direction: row;
   gap: 2rem;
 }
-form.larger > .reverse > * {
+form.larger > .form--reverse > * {
   width: 100%;
 
   display: flex;
@@ -129,13 +135,13 @@ input {
   font-size: 1rem;
   line-height: 1.4em;
 
-  border: 2px black solid;
+  border: var(--border-base-size) var(--border-color) solid;
 
   transition: .3s ease;
 }
 input:focus {
   box-shadow: 0.3em -0.3em 0 var(--color-accent-light);
-  border: 2px var(--color-secondary) solid;
+  border: var(--border-base-size) var(--border-color-accent) solid;
   outline: none;
 }
 
@@ -161,7 +167,7 @@ button {
   color: #000;
   background: var(--color-accent-light);
   /*box-shadow: -0.3em 0.3em 0 var(--color-secondary);*/
-  border: 2px black solid;
+  border: var(--border-base-size) var(--border-color) solid;
 
   transition: .3s ease;
 }
@@ -170,11 +176,6 @@ button {
   text-decoration: none;
   background: var(--color-secondary);
   box-shadow: 0.3em -0.3em 0 var(--color-accent-light);
-}
-.btn.small {
-  padding: 0.5rem;
-
-  font-size: 1rem;
 }
 
 .btns {
@@ -185,8 +186,8 @@ button {
   gap: 1rem;
   align-items: center;
 }
-.btns.center { justify-content: center; }
-.btns.no-marge { margin: 0; }
+.btns--center { justify-content: center; }
+.btns--no-marge { margin: 0; }
 
 .response {
   margin: 1rem 0;
@@ -194,10 +195,10 @@ button {
 
   display: block;
 }
-.response.success {
+.response--success {
   background: var(--color-success);
 }
-.response.danger {
+.response--danger {
   color: #fff;
   background: var(--color-danger);
 }
@@ -212,7 +213,7 @@ button {
 
 header {
   background: var(--color-accent-light);
-  border-bottom: 8px black solid;
+  border-bottom: var(--border-header-size) var(--border-color) solid;
 }
 
 header .content {
@@ -225,7 +226,7 @@ header .content .btn {
   --color-accent-light: hsl(19, 97%, 47%);
   --color-secondary: var(--color-accent);
   /*--color-accent-light: var(--color-accent);*/
-  border: 2px black solid;
+  border: var(--border-base-size) var(--border-color) solid;
   /*background: var(--color-accent-light);*/
 }
 header .content .btn:hover {
@@ -236,7 +237,7 @@ nav {
   padding: 1rem 4rem;
 
   background: var(--color-secondary);
-  border-bottom: 4px black solid;
+  border-bottom: var(--border-container-size) var(--border-color) solid;
 
   display: flex;
   flex-direction: row;
@@ -272,7 +273,7 @@ nav li { margin-bottom: 0; }
 
 main {
   margin: 2rem auto;
-  padding: 0 1rem;
+  padding: 0 2rem;
   max-width: var(--content-max-width);
   min-height: 50vh;
 }
@@ -289,7 +290,7 @@ footer {
   padding: 4rem;
 
   background: var(--color-secondary);
-  border-top: 8px black solid;
+  border-top: var(--border-header-size) var(--border-color) solid;
 
   color: #fff;
   text-align: center;
@@ -335,7 +336,7 @@ article > article {
   padding: 2rem;
 
   background: var(--color-tertiary);
-  border: 4px black solid;
+  border: var(--border-container-size) var(--border-color) solid;
 
   font-size: 18px;
 }
