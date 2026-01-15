@@ -33,7 +33,12 @@
 }
 
 body {
-  font-family: Inter, Arial, sans-serif;
+  font-family: Inter, Roboto, "Nebula Sans", "Public Sans", Verdana, Arial, sans-serif;
+  /* this enables special features of the font Inter
+   * ss02 is "Alternate glyph set that increases visual difference between similar-looking characters."
+   * tnum is "Fixed-width numbers are useful for tabular data, where comparing columns across rows is desired."
+   */
+  font-feature-settings: "ss02" 1, "tnum" 1;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -84,7 +89,7 @@ img {
 }
 
 code { 
-  font-family: monospace;
+  font-family: "Fira Code", "JetBrains Mono", monospace;
   font-size: 0.9rem;
   line-height: 1.2em;
 }
