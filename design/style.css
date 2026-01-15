@@ -373,17 +373,18 @@ footer h4 { margin-bottom: 0.15rem; }
 .navbar__toggle {
   display: none;
   font-size: 2rem;
+  cursor: pointer;
 }
 #toggle-navbar:checked ~ h1 {
   position: fixed;
-  top: 2rem;
-  left: 2rem;
+  top: 1rem;
+  left: 1rem;
   z-index: 100;
 }
 #toggle-navbar:checked ~ .navbar__toggle {
   position: fixed;
-  top: 2rem;
-  right: 2rem;
+  top: 1rem;
+  right: 1rem;
   z-index: 100;
 
   font-size: 2rem;
