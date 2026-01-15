@@ -41,7 +41,6 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
   line-height: 1.4em;
 
-  /*padding-top: 0.3em;*/ /* to correctly align headings */
   margin-bottom: 0.5em;
 }
 
@@ -64,7 +63,7 @@ em { font-style: italic; }
 b { font-weight: bold; }
 
 ul, ol {
-  margin-left: 2em;
+  margin-left: 2rem;
   margin-top: -0.5rem;
   margin-bottom: 1rem;
 }
@@ -252,7 +251,7 @@ nav h1 a { color: #fff; }
 nav h1 a:hover { text-decoration: none; }
 
 nav ul { 
-  margin-top: 0.2em;
+  margin-top: 0.2em; /* to correctly align items with website title */
   margin-bottom: 0;
 
   display: flex;
@@ -280,10 +279,13 @@ main {
 main.larger {
   max-width: var(--header-max-width);
 }
-main.flex {
+.flex {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+}
+.flex--small {
+  gap: 1rem;
 }
 
 footer {
@@ -295,7 +297,7 @@ footer {
   color: #fff;
   text-align: center;
 }
-footer .content {
+.footer__content {
   margin: 0 auto;
   max-width: var(--header-max-width);
 
@@ -304,9 +306,10 @@ footer .content {
   gap: 2rem;
 }
 footer h2 { margin-bottom: 0; }
-footer .first {
+.footer__first {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
   align-items: center;
 }
 footer ul {
@@ -323,20 +326,54 @@ footer a {
 footer p { margin-bottom: 0; }
 
 
-main > article {
+.article__container {
   margin-bottom: 4rem;
 
-  display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: 2rem;
   align-items: baseline;
 }
 
-article > article {
+.article__container > article {
   padding: 2rem;
 
   background: var(--color-tertiary);
   border: var(--border-container-size) var(--border-color) solid;
 
-  font-size: 18px;
+  font-size: 0.9em;
+}
+
+@media only screen and (max-width: 1300px) {
+  nav { padding: 1rem; }
+}
+
+@media only screen and (max-width: 1000px) {
+  :root { font-size: 16px; }
+  nav ul { margin-top: 0.1rem; }
+  nav ul a { font-size: 1.15em; }
+  form.larger > .form--reverse { 
+    flex-direction: column;
+    gap: 1rem;
+  }
+  form.larger {}
+  .article__container { gap: 2rem 1rem; }
+  .article__container > article { font-size: 1rem; }
+}
+
+@media only screen and (max-width: 700px) {
+  ul, ol { margin-left: 1rem; }
+  .grid { grid-template-columns: 1fr; }
+  .btns { flex-direction: column; }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  footer { padding: 4rem 2rem; }
+  .footer__first { 
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .article__container > article {
+    padding: 1rem;
+  }
 }
