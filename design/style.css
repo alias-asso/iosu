@@ -1,4 +1,11 @@
 :root {
+  --color-white: #fff;
+  --color-sand: hsl(20, 14%, 95%);
+  --color-black: hsl(240, 10%, 12%);
+  --color-true-black: #000;
+
+  --color-primary-background: var(--color-white);
+  --color-primary-text: var(--color-black);
   --color-secondary: hsl(19, 92%, 45%);
   --color-tertiary: hsl(19, 100%, 93%);
   --color-accent: hsl(217, 100%, 48%);
@@ -13,10 +20,33 @@
   --border-base-size: 2px;
   --border-container-size: calc(2 * var(--border-base-size));
   --border-header-size: calc(2 * var(--border-container-size));
-  --border-color: #000;
+  --border-color: var(--color-true-black);
   --border-color-accent: var(--color-secondary);
 
+  --btn-color: var(--color-accent-light);
+  --btn-color-hover: var(--color-secondary);
+  --btn-text-color: var(--color-true-black);
+  --btn-text-color-hover: var(--color-white);
+
+  --input-color: var(--color-tertiary);
+  --input-text-color: var(--color-primary-text);
+
   font-size: 20px;
+}
+
+@media only screen and (prefers-color-scheme: dark) {
+  :root {
+    --color-primary-background: var(--color-black);
+    --color-primary-text: var(--color-sand);
+    --color-secondary: hsl(19, 85%, 43%);
+    --color-tertiary: hsl(250, 18%, 21%);
+
+    --color-accent: hsl(200, 73%, 67%);
+    --color-accent-light: hsl(200, 87%, 22%);
+
+    --btn-text-color: var(--color-white);
+    --btn-text-color-hover: var(--color-white);
+  }
 }
 
 @font-face {
@@ -39,6 +69,9 @@ body {
    * tnum is "Fixed-width numbers are useful for tabular data, where comparing columns across rows is desired."
    */
   font-feature-settings: "ss02" 1, "tnum" 1;
+
+  background: var(--color-primary-background);
+  color: var(--color-primary-text);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -102,7 +135,7 @@ pre {
 
   background: #000;
 
-  color: var(--color-tertiary);
+  color: var(--color-sand);
 }
 
 form {
@@ -141,6 +174,8 @@ input {
   font-size: 1rem;
   line-height: 1.4em;
 
+  background: var(--input-color);
+  color: var(--input-text-color);
   border: var(--border-base-size) var(--border-color) solid;
 
   transition: .3s ease;
@@ -170,18 +205,18 @@ button {
 
   font-size: 1.1rem;
 
-  color: #000;
-  background: var(--color-accent-light);
+  color: var(--btn-text-color);
+  background: var(--btn-color);
   /*box-shadow: -0.3em 0.3em 0 var(--color-secondary);*/
   border: var(--border-base-size) var(--border-color) solid;
 
   transition: .3s ease;
 }
 .btn:hover {
-  color: #fff;
+  color: var(--btn-text-color-hover);
   text-decoration: none;
-  background: var(--color-secondary);
-  box-shadow: 0.3em -0.3em 0 var(--color-accent-light);
+  background: var(--btn-color-hover);
+  box-shadow: 0.3em -0.3em 0 var(--btn-color);
 }
 
 .btns {
@@ -202,10 +237,11 @@ button {
   display: block;
 }
 .response--success {
+  color: var(--color-black);
   background: var(--color-success);
 }
 .response--danger {
-  color: #fff;
+  color: var(--color-sand);
   background: var(--color-danger);
 }
 .response p { margin-bottom: 0; }
@@ -229,14 +265,9 @@ header .content {
 }
 
 header .content .btn {
-  --color-accent-light: hsl(19, 97%, 47%);
-  --color-secondary: var(--color-accent);
-  /*--color-accent-light: var(--color-accent);*/
-  border: var(--border-base-size) var(--border-color) solid;
-  /*background: var(--color-accent-light);*/
-}
-header .content .btn:hover {
-  color: #fff;
+  --btn-color: var(--color-secondary);
+  --btn-color-hover: var(--color-accent);
+  --btn-text-color-hover: var(--color-black);
 }
 
 nav {
@@ -250,11 +281,12 @@ nav {
   align-items: center;
   justify-content: space-between;
 
-  color: #fff;
+  --color-primary-text: var(--color-sand);
+  color: var(--color-primary-text);
 }
 
 nav h1 { margin-bottom: -0.3em; }
-nav h1 a { color: #fff; }
+nav h1 a { color: var(--color-primary-text); }
 nav h1 a:hover { text-decoration: none; }
 
 .navbar__links { 
@@ -272,7 +304,7 @@ nav h1 a:hover { text-decoration: none; }
   /*font-family: Newsreader, sans-serif;*/
   font-size: 1.3em;
   font-weight: 400;
-  color: #fff;
+  color: var(--color-primary-text);
   text-decoration: none;
 }
 .navbar__links a:hover { text-decoration: underline; }
@@ -307,7 +339,8 @@ footer {
   background: var(--color-secondary);
   border-top: var(--border-header-size) var(--border-color) solid;
 
-  color: #fff;
+  --color-primary-text: var(--color-sand);
+  color: var(--color-primary-text);
   text-align: center;
 }
 footer > * {
@@ -329,7 +362,7 @@ footer ul {
 footer a {
   display: block;
 
-  color: #fff;
+  color: var(--color-primary-text);
   font-weight: 500;
 }
 footer p { margin-bottom: 0; }
