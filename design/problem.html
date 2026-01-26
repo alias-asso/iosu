@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IO/SU 2026 - Création de l'interpréteur d'un langage de programmation simple</title>
+    <link href="reset.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+  </head>
+  <body>
+    <header>
+      <nav>
+        <input type="checkbox" id="toggle-navbar">
+        <h1><a href="/">IO/SU 2026</a></h1>
+        <label for="toggle-navbar" class="navbar__toggle">☰</label>
+        <ul class="navbar__links">
+          <li><a href="/">Accueil</a></li>
+          <li><a href="/">Principe</a></li>
+          <li><a href="/">Informations</a></li>
+          <li><a href="/">Règles</a></li>
+          <!--<li><a href="/problems.html">Compétition</a></li>-->
+          <li><a href="/inscription.html">Inscription</a></li>
+        </ul>
+      </nav>
+      <div class="content">
+        <h2>Création de l'interpréteur d'un langage de programmation simple</h2>
+        <p class="subtitle">par William Hergès, pour des étudiants en L3 / master, 5 parties.</p>
+        <p>
+          Dans votre ville, de plus en plus de personnes prennent les transports en commun pour réduire leur emprunte carbonne.
+          Son metro, qui commence à vieillir, ne peut pas supporter une telle augmentation.
+          Pour solutionner ce problème, votre ville a décidé de le moderniser en l'automatisant.
+          Cela permettra d'avoir des horaires plus fiables tout en demandant moins de personnels (qui pourront alors être
+          réaffecté sur d'autres missions).
+        </p>
+        <div class="btns">
+          <a href="/problems.html" class="btn">Liste des problèmes</a>
+          <a href="" class="btn">Votre input</a>
+          <a href="" class="btn">Sujet en PDF</a>
+        </div>
+      </div>
+    </header>
+    <main>
+      <p>
+        Le processus d'automatisation se déroule à merveille, jusqu'au jour où ils ont eu besoin de coder dans un
+        langage fiable le programme des rames.
+        Ils ont découvert que l'approximation des nombres à virgule augmentait significativement le risque d'accident.
+        Au lieu d'implémenter une bibliothèque permettant d'effectuer les calculs, ils ont préféré faire appel à vous
+        pour construire un nouveau langage de programmation particulièrement adapté pour faire des mathématiques.
+        Vous n'avez pas à le designer, <b>vous avez à créer un interpréteur de ce langage</b>.
+      </p>
+      <p>Ils vous ont donné cet exemple de syntaxe :</p>
+      <pre><code># création des variables
+let x = 5
+# création d'une fonction
+let f: x,y = 3*x+y
+# appel d'une fonction
+let z = f(x,.2)
+# affichage du résultat
+1+z
+# plusieurs instructions sur la même ligne
+let a = 3;; let b = 3;;
+let alpha = b / 5;; 1+2/3</code></pre>
+      <p>Ils vous proposent de suivre ces étapes :</p>
+      <ol>
+        <li>création d'un <em>lexer</em> pour faciliter la lecture du fichier ;</li>
+        <li>
+          création d'un <em>abstract structure tree</em> (AST) simple pour représenter les calculs communs (addition,
+          soustraction, multiplication, division) et son évaluation ;
+        </li>
+        <li>complétion de l'AST pour supporter la création de variables et leur évaluation ;</li>
+        <li>ajout du support des fonctions et de leur évaluation ;</li>
+        <li>modification de l'évaluation pour éviter la perte de précision inhérante aux floatants.</li>
+      </ol>
+      <p>
+        Chacune de ces étapes rajoutera de la complexité à l'interpréteur du langage pour arriver à un prototype 
+        utilisable par les ingénieurs.
+      </p>
+      <h3>Partie 1 - Lexer</h3>
+      <p>Redacted.</p>
+      <h4>Au travail !</h4>
+      <p>
+        Vous pouvez récupérer votre input en cliquant <a href="/">ici</a>.
+      </p>
+      <div class="response response--danger">
+        <p>Mauvaise réponse</p>
+      </div>
+      <div class="response response--success">
+        <p>Bonne réponse</p>
+      </div>
+      <p>
+        Votre réponse :
+      </p>
+      <form action="">
+        <input type="text" placeholder="123...">
+        <button type="submit" class="btn">Vérifier</button>
+      </form>
+    </main>
+    <footer>
+      <div class="footer__first">
+        <div>
+          <h2>IO/SU 2026</h2>
+        </div>
+        <div>
+          <ul>
+            <li><a href="/">Accueil</a></li>
+            <li><a href="/">Principe</a></li>
+            <li><a href="/">Informations</a></li>
+            <li><a href="/">Règles</a></li>
+            <li><a href="/inscription.html">Inscription</a></li>
+            <!--<li><a href="/problems.html">Compétition</a></li>-->
+            <li><a href="/credits.html">Crédits</a></li>
+            <li><a href="" target="_blank">Code source</a></li>
+            <li><a href="/legal.html">Mentions légales</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Nous suivre</h4>
+          <ul>
+            <li><a href="" target="_blank">Discord</a></li>
+            <li><a href="" target="_blank">Instagram</a></li>
+            <li><a href="" target="_blank">GitHub</a></li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <p>&copy; 2026 - ALIAS et contributeurs, tous droits réservés.</p>
+        <p>Un événement organisé par l'ALIAS pour les étudiants de Sorbonne Univeristé.</p>
+      </div>
+    </footer>
+  </body>
+</html>
