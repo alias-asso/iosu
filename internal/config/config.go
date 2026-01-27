@@ -27,12 +27,13 @@ type MysqlDb struct {
 }
 
 type Config struct {
-	ServerPort string     `toml:"server_port"`
-	JwtKey     string     `toml:"jwt_key"`
-	DbType     string     `toml:"db_type"`
-	Sqlite     SqliteDb   `toml:"sqlite"`
-	Mysql      MysqlDb    `toml:"mysql"`
-	Postgres   PostgresDb `toml:"postgres"`
+	ServerPort           string     `toml:"server_port"`
+	JwtKey               string     `toml:"jwt_key"`
+	DefaultAdminPassword string     `toml:"default_admin_password"`
+	DbType               string     `toml:"db_type"`
+	Sqlite               SqliteDb   `toml:"sqlite"`
+	Mysql                MysqlDb    `toml:"mysql"`
+	Postgres             PostgresDb `toml:"postgres"`
 }
 
 func ParseConfig(path string) (Config, error) {

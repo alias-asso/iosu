@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -23,6 +24,8 @@ func NewServer(config config.Config) (Server, error) {
 	if err != nil {
 		log.Fatalln("Error connecting to the database")
 	}
+
+	createDefaultAdmin(db, &config, context.Background())
 
 	return Server{
 		mux: mux,

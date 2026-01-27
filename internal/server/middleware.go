@@ -9,7 +9,7 @@ import (
 
 func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("X-Auth-Token")
+		cookie, err := r.Cookie("token")
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return

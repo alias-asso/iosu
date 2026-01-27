@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -79,17 +80,33 @@ func comparePassword(password, hash string) bool {
 	return err == nil
 }
 
+func createDefaultAdmin(db *gorm.DB, config *config.Config, ctx context.Context) {
+	_, err := gorm.G[database.User](db).Where("username = ?", "admin").First(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		encryptedPassword, err := encryptPassword(config.DefaultAdminPassword)
+		if err != nil {
+			fmt.Errorf("Error encrypting default admin password.")
+		}
+		admin_user := database.User{
+			Username: "admin",
+			Email:    "admin@example.com",
+			Password: encryptedPassword,
+		}
+		err = gorm.G[database.User](db).Create(ctx, &admin_user)
+
+		if err != nil {
+			fmt.Errorf("Error inserting default admin user.")
+		}
+	}
+}
+
 // route handler
 func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
-	email := r.FormValue("email")
+	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	if email == "" {
+	if username == "" {
 		http.Error(w, "An email is required.", http.StatusBadRequest)
-		return
-	}
-	if !validateEmail(email) {
-		http.Error(w, "Invalid email.", http.StatusBadRequest)
 		return
 	}
 
@@ -109,7 +126,7 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := generateJWT(r.FormValue("username"), user.Admin, s.cfg)
+	token, err := generateJWT(username, user.Admin, s.cfg)
 	if err != nil {
 		http.Error(w, "Internal error.", http.StatusInternalServerError)
 		log.Println(err)
@@ -134,7 +151,7 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 
 // route handler
 func (s *Server) postRegisterAccount(w http.ResponseWriter, r *http.Request) {
-
+	// TODO
 }
 
 // route handler
