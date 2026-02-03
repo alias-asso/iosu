@@ -1,0 +1,13 @@
+{
+  "name": "iosu-plateform",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "format": "prettier . --write"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1",
+    "prettier-plugin-go-template": "^0.0.15"
+  },
+  "peerDependencies": {}
+}
