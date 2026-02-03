@@ -1,18 +1,22 @@
 {
   "name": "iosu-plateform",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "format": "prettier . --write",
-    "build:scss": "sass --no-source-map --style=compressed scss/main.scss dist/styles.css",
-    "watch:scss": "sass --watch scss/main.scss dist/styles.css",
-    "build": "bun run build:scss"
-  },
   "devDependencies": {
     "prettier": "^3.8.1",
     "prettier-plugin-go-template": "^0.0.15",
     "sass": "^1.97.3",
     "scss": "^0.2.4"
   },
-  "peerDependencies": {}
+  "peerDependencies": {},
+  "private": true,
+  "scripts": {
+    "format": "prettier . --write",
+    "build:scss": "sass --no-source-map --style=compressed scss/main.scss dist/styles.css",
+    "watch:scss": "sass --watch scss/main.scss dist/styles.css",
+    "build:js": "bun build --minify --outfile=dist/scripts.js index.ts",
+    "build": "bun run build:scss && bun run build:js"
+  },
+  "type": "module",
+  "dependencies": {
+    "htmx.org": "^2.0.8"
+  }
 }
