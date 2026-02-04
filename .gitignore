@@ -1,5 +1,4 @@
 node_modules
 db.sqlite
-package.json
-package-lock.json
 main
+dist

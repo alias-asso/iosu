@@ -1,16 +1,16 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>IO/SU 2026 - Création de l'interpréteur d'un langage de programmation simple</title>
-    <link href="reset.css" rel="stylesheet">
-    <link href="style.css" rel="stylesheet">
+    <link href="reset.css" rel="stylesheet" />
+    <link href="style.css" rel="stylesheet" />
   </head>
   <body>
     <header>
       <nav>
-        <input type="checkbox" id="toggle-navbar">
+        <input type="checkbox" id="toggle-navbar" />
         <h1><a href="/">IO/SU 2026</a></h1>
         <label for="toggle-navbar" class="navbar__toggle">☰</label>
         <ul class="navbar__links">
@@ -26,11 +26,10 @@
         <h2>Création de l'interpréteur d'un langage de programmation simple</h2>
         <p class="subtitle">par William Hergès, pour des étudiants en L3 / master, 5 parties.</p>
         <p>
-          Dans votre ville, de plus en plus de personnes prennent les transports en commun pour réduire leur emprunte carbonne.
-          Son metro, qui commence à vieillir, ne peut pas supporter une telle augmentation.
-          Pour solutionner ce problème, votre ville a décidé de le moderniser en l'automatisant.
-          Cela permettra d'avoir des horaires plus fiables tout en demandant moins de personnels (qui pourront alors être
-          réaffecté sur d'autres missions).
+          Dans votre ville, de plus en plus de personnes prennent les transports en commun pour réduire leur emprunte
+          carbonne. Son metro, qui commence à vieillir, ne peut pas supporter une telle augmentation. Pour solutionner
+          ce problème, votre ville a décidé de le moderniser en l'automatisant. Cela permettra d'avoir des horaires plus
+          fiables tout en demandant moins de personnels (qui pourront alors être réaffecté sur d'autres missions).
         </p>
         <div class="btns">
           <a href="/problems.html" class="btn">Liste des problèmes</a>
@@ -42,11 +41,11 @@
     <main>
       <p>
         Le processus d'automatisation se déroule à merveille, jusqu'au jour où ils ont eu besoin de coder dans un
-        langage fiable le programme des rames.
-        Ils ont découvert que l'approximation des nombres à virgule augmentait significativement le risque d'accident.
-        Au lieu d'implémenter une bibliothèque permettant d'effectuer les calculs, ils ont préféré faire appel à vous
-        pour construire un nouveau langage de programmation particulièrement adapté pour faire des mathématiques.
-        Vous n'avez pas à le designer, <b>vous avez à créer un interpréteur de ce langage</b>.
+        langage fiable le programme des rames. Ils ont découvert que l'approximation des nombres à virgule augmentait
+        significativement le risque d'accident. Au lieu d'implémenter une bibliothèque permettant d'effectuer les
+        calculs, ils ont préféré faire appel à vous pour construire un nouveau langage de programmation particulièrement
+        adapté pour faire des mathématiques. Vous n'avez pas à le designer,
+        <b>vous avez à créer un interpréteur de ce langage</b>.
       </p>
       <p>Ils vous ont donné cet exemple de syntaxe :</p>
       <pre><code># création des variables
@@ -72,26 +71,22 @@ let alpha = b / 5;; 1+2/3</code></pre>
         <li>modification de l'évaluation pour éviter la perte de précision inhérante aux floatants.</li>
       </ol>
       <p>
-        Chacune de ces étapes rajoutera de la complexité à l'interpréteur du langage pour arriver à un prototype 
+        Chacune de ces étapes rajoutera de la complexité à l'interpréteur du langage pour arriver à un prototype
         utilisable par les ingénieurs.
       </p>
       <h3>Partie 1 - Lexer</h3>
       <p>Redacted.</p>
       <h4>Au travail !</h4>
-      <p>
-        Vous pouvez récupérer votre input en cliquant <a href="/">ici</a>.
-      </p>
+      <p>Vous pouvez récupérer votre input en cliquant <a href="/">ici</a>.</p>
       <div class="response response--danger">
         <p>Mauvaise réponse</p>
       </div>
       <div class="response response--success">
         <p>Bonne réponse</p>
       </div>
-      <p>
-        Votre réponse :
-      </p>
+      <p>Votre réponse :</p>
       <form action="">
-        <input type="text" placeholder="123...">
+        <input type="text" placeholder="123..." />
         <button type="submit" class="btn">Vérifier</button>
       </form>
     </main>
