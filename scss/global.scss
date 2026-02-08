@@ -1,0 +1,182 @@
+@use "vars";
+
+body {
+  font-family:
+    Inter, Roboto, "Nebula Sans", "Public Sans", Verdana, Arial, sans-serif;
+  /* this enables special features of the font Inter
+   * ss02 is "Alternate glyph set that increases visual difference between similar-looking characters."
+   * tnum is "Fixed-width numbers are useful for tabular data, where comparing columns across rows is desired."
+   */
+  font-feature-settings:
+    "ss02" 1,
+    "tnum" 1;
+
+  background: var(--color-primary-background);
+  color: var(--color-primary-text);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: Salmond, sans-serif;
+  font-weight: bold;
+  line-height: 1.4em;
+
+  margin-bottom: 0.5rem;
+}
+
+h1 {
+  font-size: 2em;
+}
+h2 {
+  font-size: 1.85em;
+}
+h3 {
+  font-size: 1.5em;
+}
+h4 {
+  font-size: 1.25em;
+}
+h5 {
+  font-size: 1.15em;
+}
+
+p {
+  line-height: 1.4em;
+  margin-bottom: 1em;
+}
+
+a {
+  text-decoration: none;
+  color: var(--color-accent);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+em {
+  font-style: italic;
+}
+b {
+  font-weight: bold;
+}
+
+ul,
+ol {
+  margin-left: 2rem;
+  margin-top: -0.5rem;
+  margin-bottom: 1rem;
+
+  @media only screen and (max-width: vars.$bp-small) {
+    margin-left: 1rem;
+  }
+}
+
+ul {
+  list-style: disc;
+}
+ol {
+  list-style: decimal;
+}
+
+li {
+  line-height: 1.2em;
+  margin-bottom: 0.25rem;
+}
+
+img {
+  width: 100%;
+  border: var(--border-base-size) var(--border-color) solid;
+}
+
+code {
+  font-family: "Fira Code", "JetBrains Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.2em;
+}
+
+pre {
+  margin-left: -1rem;
+  margin-right: -1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+
+  background: #000;
+
+  color: var(--color-sand);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
+
+  @media only screen and (max-width: vars.$bp-small) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn {
+  padding: 0.5em 1em;
+
+  display: inline-block;
+
+  font-size: 1.1rem;
+
+  color: var(--btn-text-color);
+  background: var(--btn-color);
+  /*box-shadow: -0.3em 0.3em 0 var(--color-secondary);*/
+  border: var(--border-base-size) var(--border-color) solid;
+
+  transition: 0.3s ease;
+
+  &:hover {
+    color: var(--btn-text-color-hover);
+    text-decoration: none;
+    background: var(--btn-color-hover);
+    box-shadow: 0.3em -0.3em 0 var(--btn-color);
+  }
+}
+
+.btns {
+  margin: 2rem 0;
+
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: center;
+
+  @media only screen and (max-width: vars.$bp-small) {
+    flex-direction: column;
+  }
+
+  &--center {
+    justify-content: center;
+  }
+
+  &--no-marge {
+    margin: 0;
+  }
+}
+
+.subtitle {
+  margin-top: -0.75rem;
+
+  font-weight: 300;
+  font-style: italic;
+}
+
+.flex {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+
+  &--small {
+    gap: 2rem;
+  }
+}

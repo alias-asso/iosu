@@ -1,0 +1,140 @@
+@use "vars";
+
+header {
+  background: var(--color-accent-light);
+  border-bottom: var(--border-header-size) var(--border-color) solid;
+
+  & .content {
+    margin: 0 auto;
+    padding: 2rem 1rem;
+    max-width: var(--header-max-width);
+  }
+
+  & .content .btn {
+    --btn-color: var(--color-secondary);
+    --btn-color-hover: var(--color-accent);
+    --btn-text-color-hover: var(--color-black);
+  }
+}
+
+nav {
+  padding: 1rem 4rem;
+
+  background: var(--color-secondary);
+  border-bottom: var(--border-container-size) var(--border-color) solid;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+
+  --color-primary-text: var(--color-sand);
+  color: var(--color-primary-text);
+
+  @media only screen and (max-width: vars.$bp-large) {
+    padding: 1rem;
+  }
+
+  & h1 {
+    margin-bottom: -0.3em;
+  }
+
+  & h1 a {
+    color: var(--color-primary-text);
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  & li {
+    margin-bottom: 0;
+  }
+}
+
+.navbar__links {
+  margin-top: 0.2em; /* to correctly align items with website title */
+  margin-bottom: 0;
+
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+
+  list-style: none;
+  margin-left: 0;
+
+  @media only screen and (max-width: vars.$bp-mid) {
+    margin-top: 0.1rem;
+  }
+
+  & a {
+    font-size: 1.3em;
+    font-weight: 400;
+    color: var(--color-primary-text);
+    text-decoration: none;
+
+    @media only screen and (max-width: vars.$bp-mid) {
+      font-size: 1.2em;
+    }
+
+    @media only screen and (max-width: vars.$bp-small) {
+      display: none;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* RESPONSIVE */
+
+#toggle-navbar {
+  display: none;
+}
+
+.navbar__toggle {
+  display: none;
+  font-size: 2rem;
+  cursor: pointer;
+
+  @media only screen and (max-width: vars.$bp-small) {
+    display: block;
+  }
+}
+
+#toggle-navbar:checked ~ {
+  & h1 {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 100;
+  }
+
+  & .navbar__toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 100;
+
+    font-size: 2rem;
+  }
+
+  & .navbar__links {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0;
+    padding-left: 2rem;
+    padding-top: 8rem;
+
+    background: var(--color-secondary);
+
+    display: flex;
+    flex-direction: column;
+
+    font-size: 1.5rem;
+  }
+}

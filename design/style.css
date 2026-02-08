@@ -454,8 +454,6 @@ footer h4 {
     flex-direction: column;
     gap: 1rem;
   }
-  form.larger {
-  }
   .article__container {
     gap: 2rem 1rem;
   }

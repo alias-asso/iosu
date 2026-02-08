@@ -1,0 +1,33 @@
+@use "vars";
+
+main.larger {
+  max-width: var(--header-max-width);
+}
+
+.article__container {
+  margin-bottom: 4rem;
+
+  gap: 2rem;
+  align-items: baseline;
+
+  @media only screen and (max-width: vars.$bp-mid) {
+    gap: 2rem 1rem;
+  }
+
+  & > article {
+    padding: 2rem;
+
+    background: var(--color-tertiary);
+    border: var(--border-container-size) var(--border-color) solid;
+
+    font-size: 0.9em;
+
+    @media only screen and (max-width: vars.$bp-mid) {
+      font-size: 1rem;
+    }
+
+    @media only screen and (max-width: vars.$bp-mid) {
+      padding: 1rem;
+    }
+  }
+}

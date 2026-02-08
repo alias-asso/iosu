@@ -1,0 +1,73 @@
+@use "../node_modules/reset-css/sass/reset";
+@use "vars";
+@use "global";
+@use "form";
+@use "header";
+@use "footer";
+@use "content";
+
+:root {
+  --color-white: #fff;
+  --color-sand: hsl(20, 14%, 95%);
+  --color-black: hsl(240, 10%, 12%);
+  --color-true-black: #000;
+
+  --color-primary-background: var(--color-white);
+  --color-primary-text: var(--color-black);
+  --color-secondary: hsl(19, 92%, 45%);
+  --color-tertiary: hsl(19, 100%, 93%);
+  --color-accent: hsl(217, 100%, 48%);
+  --color-accent-light: hsl(217, 100%, 65%);
+
+  --color-success: hsl(95, 55%, 55%);
+  --color-danger: hsl(357, 70%, 33%);
+
+  --content-max-width: 900px;
+  --header-max-width: calc(var(--content-max-width) + 200px);
+
+  --border-base-size: 2px;
+  --border-container-size: calc(2 * var(--border-base-size));
+  --border-header-size: calc(2 * var(--border-container-size));
+  --border-color: var(--color-true-black);
+  --border-color-accent: var(--color-secondary);
+
+  --btn-color: var(--color-accent-light);
+  --btn-color-hover: var(--color-secondary);
+  --btn-text-color: var(--color-true-black);
+  --btn-text-color-hover: var(--color-white);
+
+  --input-color: var(--color-tertiary);
+  --input-text-color: var(--color-primary-text);
+
+  font-size: 20px;
+
+  @media only screen and (max-width: vars.$bp-mid) {
+    font-size: 16px;
+  }
+
+  @media only screen and (prefers-color-scheme: dark) {
+    --color-primary-background: var(--color-black);
+    --color-primary-text: var(--color-sand);
+    --color-secondary: hsl(19, 85%, 43%);
+    --color-tertiary: hsl(250, 18%, 21%);
+
+    --color-accent: hsl(200, 73%, 67%);
+    --color-accent-light: hsl(200, 87%, 22%);
+
+    --btn-text-color: var(--color-white);
+    --btn-text-color-hover: var(--color-white);
+  }
+}
+
+@font-face {
+  font-family: Salmond;
+  font-style: normal;
+  font-weight: 300;
+  src: url("/fonts/Salmond/Salmond-Light.ttf");
+}
+@font-face {
+  font-family: Salmond;
+  font-style: normal;
+  font-weight: 600;
+  src: url("/fonts/Salmond/Salmond-Semibold.ttf");
+}

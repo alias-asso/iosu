@@ -17,6 +17,7 @@
   },
   "type": "module",
   "dependencies": {
-    "htmx.org": "^2.0.8"
+    "htmx.org": "^2.0.8",
+    "reset-css": "^5.0.2"
   }
 }
