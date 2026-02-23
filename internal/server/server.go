@@ -46,5 +46,8 @@ func (s *Server) SetupServer(config config.Config) error {
 
 func (s *Server) Start(port string) {
 	log.Printf("Listening on %s:%s", "localhost", port)
-	http.ListenAndServe(":"+port, s.mux)
+	err := http.ListenAndServe(":"+port, s.mux)
+	if err != nil {
+		log.Panicf("Error launching server : %s\n", err)
+	}
 }
