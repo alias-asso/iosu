@@ -29,13 +29,19 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "username", claims.Username)
+		ctx := context.WithValue(r.Context(), "claims", &claims)
 		next(w, r.WithContext(ctx))
 	}
 }
 
-func withAdmin(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) withAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
+		claims := r.Context().Value("claims").(*Claims)
+		if !claims.Admin {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "claims", &claims)
+		next(w, r.WithContext(ctx))
 	}
 }
