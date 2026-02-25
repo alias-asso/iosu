@@ -43,6 +43,8 @@ func (s *Server) postCreateContest(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error inserting contest", http.StatusInternalServerError)
 	}
 
-	// TODO: change
-	w.Write([]byte("inserted successfully"))
+	contestDirPath :=
+
+		// TODO: change
+		w.Write([]byte("inserted successfully"))
 }

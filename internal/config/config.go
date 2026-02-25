@@ -30,6 +30,7 @@ type Config struct {
 	ServerPort           string     `toml:"server_port"`
 	JwtKey               string     `toml:"jwt_key"`
 	DefaultAdminPassword string     `toml:"default_admin_password"`
+	DataDirectory        string     `toml:"data_directory"`
 	DbType               string     `toml:"db_type"`
 	Sqlite               SqliteDb   `toml:"sqlite"`
 	Mysql                MysqlDb    `toml:"mysql"`
@@ -69,6 +70,7 @@ func ParseConfig(path string) (Config, error) {
 
 func DefaultConfig() Config {
 	return Config{
+		DataDirectory: fmt.Sprintf("/var/%s", PlateformName),
 		Sqlite: SqliteDb{
 			DbPath: fmt.Sprintf("/var/%s/db.sqlite", PlateformName),
 		},
