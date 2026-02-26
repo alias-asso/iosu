@@ -25,8 +25,6 @@ func NewServer(config config.Config) (Server, error) {
 		log.Fatalln("Error connecting to the database")
 	}
 
-	createDefaultAdmin(db, &config, context.Background())
-
 	return Server{
 		mux: mux,
 		db:  db,
@@ -41,6 +39,7 @@ func (s *Server) SetupServer(config config.Config) error {
 	if err != nil {
 		return err
 	}
+	createDefaultAdmin(s.db, &config, context.Background())
 	return nil
 }
 

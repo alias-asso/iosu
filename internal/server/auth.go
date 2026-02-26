@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -17,6 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Claims struct {
@@ -81,18 +81,30 @@ func comparePassword(password, hash string) bool {
 }
 
 func createDefaultAdmin(db *gorm.DB, config *config.Config, ctx context.Context) {
-	_, err := gorm.G[database.User](db).Where("username = ?", "admin").First(ctx)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	res := gorm.WithResult()
+	adminUser := database.User{
+		Username: "admin",
+		Email:    "admin@example.com",
+	}
+	err := gorm.G[database.User](db,
+		clause.OnConflict{
+			Columns:   []clause.Column{{Name: "username"}},
+			DoNothing: true,
+		},
+		res,
+	).Create(ctx, &adminUser)
+	if err != nil {
+		fmt.Errorf("Error creating default admin.")
+	}
+
+	if res.RowsAffected == 1 {
+		log.Println("Creating default admin account. Please change password immediately.")
 		encryptedPassword, err := encryptPassword(config.DefaultAdminPassword)
 		if err != nil {
 			fmt.Errorf("Error encrypting default admin password.")
 		}
-		admin_user := database.User{
-			Username: "admin",
-			Email:    "admin@example.com",
-			Password: encryptedPassword,
-		}
-		err = gorm.G[database.User](db).Create(ctx, &admin_user)
+
+		_, err = gorm.G[database.User](db).Where("username", "admin").Update(ctx, "password", encryptedPassword)
 
 		if err != nil {
 			fmt.Errorf("Error inserting default admin user.")
