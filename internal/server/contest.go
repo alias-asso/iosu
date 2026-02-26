@@ -1,7 +1,10 @@
 package server
 
 import (
+	"errors"
 	"net/http"
+	"os"
+	"path"
 	"time"
 
 	"github.com/alias-asso/iosu/internal/database"
@@ -40,11 +43,21 @@ func (s *Server) postCreateContest(w http.ResponseWriter, r *http.Request) {
 
 	err = gorm.G[database.Contest](s.db).Create(r.Context(), &contest)
 	if err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			http.Error(w, "A contest with this name already exist", http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "Error inserting contest", http.StatusInternalServerError)
+		return
 	}
 
-	contestDirPath :=
+	contestDirPath := path.Join(s.cfg.DataDirectory, name)
 
-		// TODO: change
-		w.Write([]byte("inserted successfully"))
+	if info, err := os.Stat(contestDirPath); err == nil && info.IsDir() {
+		http.Error(w, "Directory "+contestDirPath+" exists", http.StatusBadRequest)
+		return
+	}
+
+	// TODO: change
+	w.Write([]byte("inserted successfully"))
 }

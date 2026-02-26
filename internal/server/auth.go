@@ -106,7 +106,7 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if username == "" {
-		http.Error(w, "An email is required.", http.StatusBadRequest)
+		http.Error(w, "An username is required.", http.StatusBadRequest)
 		return
 	}
 
