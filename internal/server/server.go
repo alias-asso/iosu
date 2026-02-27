@@ -1,45 +1,47 @@
 package server
 
 import (
-	"context"
 	"log"
 	"net/http"
 
 	"github.com/alias-asso/iosu/internal/config"
-	"github.com/alias-asso/iosu/internal/database"
-	"gorm.io/gorm"
+	"github.com/alias-asso/iosu/internal/service"
 )
 
 type Server struct {
-	db  *gorm.DB
-	mux *http.ServeMux
-	cfg *config.Config
+	contestService *service.ContestService
+	authService    *service.AuthService
+	mux            *http.ServeMux
+	cfg            *config.Config
+}
+
+func NewServer(contestService *service.ContestService, authService *service.AuthService, mux *http.ServeMux, cfg *config.Config) *Server {
+	return &Server{
+		contestService: contestService,
+		authService:    authService,
+		mux:            mux,
+		cfg:            cfg,
+	}
 }
 
 // Define a basic http server and connect to the database
-func NewServer(config config.Config) (Server, error) {
-	mux := http.NewServeMux()
+// func NewServer(config config.Config) (Server, error) {
+// 	mux := http.NewServeMux()
 
-	err, db := database.ConnectDb(&config)
-	if err != nil {
-		log.Fatalln("Error connecting to the database")
-	}
+// 	err, db := database.ConnectDb(&config)
+// 	if err != nil {
+// 		log.Fatalln("Error connecting to the database")
+// 	}
 
-	return Server{
-		mux: mux,
-		db:  db,
-		cfg: &config,
-	}, nil
-}
+// 	return Server{
+// 		mux: mux,
+// 		cfg: &config,
+// 	}, nil
+// }
 
 func (s *Server) SetupServer(config config.Config) error {
 	registerRoutes(s)
 
-	err := database.Migrate(s.db)
-	if err != nil {
-		return err
-	}
-	createDefaultAdmin(s.db, &config, context.Background())
 	return nil
 }
 

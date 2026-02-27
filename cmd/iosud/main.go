@@ -4,11 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/alias-asso/iosu/internal/config"
+	"github.com/alias-asso/iosu/internal/database"
+	"github.com/alias-asso/iosu/internal/repository"
 	"github.com/alias-asso/iosu/internal/server"
+	"github.com/alias-asso/iosu/internal/service"
 )
 
 var configDirPath string = fmt.Sprintf("/etc/%s", config.PlateformName)
@@ -31,15 +35,31 @@ func main() {
 		log.Fatalln("Error parsing config : " + err.Error())
 	}
 
-	serv, err := server.NewServer(config)
+	err, db := database.ConnectDb(config)
 	if err != nil {
-		log.Fatalln("Error creating server : " + err.Error())
+		log.Fatalln("Error connecting to the database")
 	}
 
-	err = serv.SetupServer(config)
-	if err != nil {
-		log.Fatalln("Error setting up server : " + err.Error())
+	contestRepo := repository.NewGormContestRepository(db)
+
+	contestService := &service.ContestService{
+		Repo:    contestRepo,
+		DataDir: config.DataDirectory,
 	}
 
-	serv.Start(config.ServerPort)
+	mux := http.NewServeMux()
+	server := &server.Server{
+		ContestService: contestService,
+		Mux:            mux,
+		Cfg:            config,
+	}
+
+	err = database.Migrate(db)
+	if err != nil {
+		return err
+	}
+
+	createDefaultAdmin(db, &config, context.Background())
+
+	server.Start(config.ServerPort)
 }
