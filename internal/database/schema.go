@@ -18,9 +18,9 @@ type User struct {
 
 type ActivationCode struct {
 	gorm.Model
-	Code       string
+	Code       string `gorm:"unique"`
 	Expiration time.Time
-	UserID     int
+	UserID     uint
 	User       User
 }
 

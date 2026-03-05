@@ -1,7 +1,8 @@
 server_port = "8990"
 jwt_key = "0sb4kq6WV0WAefxA"
 default_admin_password = "pleasechangeme"
-
+data_directory = "./data"
 db_type = "sqlite"
+
 [sqlite]
 db_path = "./db.sqlite"
