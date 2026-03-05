@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 
 	"github.com/alias-asso/iosu/internal/config"
+	"github.com/alias-asso/iosu/internal/database"
+	"github.com/alias-asso/iosu/internal/repository"
 	"github.com/alias-asso/iosu/internal/server"
+	"github.com/alias-asso/iosu/internal/service"
 )
 
 var configDirPath string = fmt.Sprintf("/etc/%s", config.PlateformName)
@@ -31,15 +36,26 @@ func main() {
 		log.Fatalln("Error parsing config : " + err.Error())
 	}
 
-	serv, err := server.NewServer(config)
+	err, db := database.ConnectDb(config)
 	if err != nil {
-		log.Fatalln("Error creating server : " + err.Error())
+		log.Fatalln("Error connecting to the database.")
 	}
 
-	err = serv.SetupServer(config)
+	contestRepo := repository.NewGormContestRepository(db)
+	userRepo := repository.NewGormUserRepository(db)
+
+	contestService := service.NewConstestService(contestRepo, config.DataDirectory)
+	authService := service.NewAuthService(userRepo, config.JwtKey, config.DefaultAdminPassword)
+
+	mux := http.NewServeMux()
+	server := server.NewServer(&contestService, &authService, mux, config)
+
+	err = database.Migrate(db)
 	if err != nil {
-		log.Fatalln("Error setting up server : " + err.Error())
+		log.Fatalln("Error during database migration.")
 	}
 
-	serv.Start(config.ServerPort)
+	authService.CreateDefaultAdmin(context.Background())
+
+	server.Start(config.ServerPort)
 }
