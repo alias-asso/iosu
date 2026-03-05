@@ -19,9 +19,17 @@ import (
 )
 
 type AuthService struct {
-	UserRepo             repository.UserRepository
-	JwtSecret            string
-	DefaultAdminPassword string
+	repo                 repository.UserRepository
+	jwtSecret            string
+	defaultAdminPassword string
+}
+
+func NewAuthService(repo repository.UserRepository, jwtSecret string, defaultAdminPassword string) AuthService {
+	return AuthService{
+		repo:                 repo,
+		jwtSecret:            jwtSecret,
+		defaultAdminPassword: defaultAdminPassword,
+	}
 }
 
 var (
@@ -101,7 +109,7 @@ func (s *AuthService) Login(ctx context.Context, input LoginInput) (string, erro
 		return "", ErrPasswordRequired
 	}
 
-	user, err := s.UserRepo.GetByUsername(ctx, input.Username)
+	user, err := s.repo.GetByUsername(ctx, input.Username)
 	if err != nil {
 		return "", ErrNonExistantAccount
 	}
@@ -110,7 +118,7 @@ func (s *AuthService) Login(ctx context.Context, input LoginInput) (string, erro
 		return "", ErrWrongPassword
 	}
 
-	token, err := generateJWT(input.Username, user.Admin, s.JwtSecret)
+	token, err := generateJWT(input.Username, user.Admin, s.jwtSecret)
 	if err != nil {
 		return "", err
 	}
@@ -126,19 +134,19 @@ func (s *AuthService) CreateDefaultAdmin(ctx context.Context) {
 		Admin:     true,
 		Activated: true,
 	}
-	ok, err := s.UserRepo.CreateIfNotExist(ctx, user)
+	ok, err := s.repo.CreateIfNotExist(ctx, user)
 	if err != nil {
 		log.Fatalln("Error creating default admin.")
 	}
 
 	if ok {
 		log.Println("Creating default admin account. Please change password immediately.")
-		encryptedPassword, err := encryptPassword(s.DefaultAdminPassword)
+		encryptedPassword, err := encryptPassword(s.defaultAdminPassword)
 		if err != nil {
 			log.Fatalln("Error encrypting default admin password.")
 		}
 
-		s.UserRepo.UpdateByUsername(ctx, &database.User{Username: "admin", Password: encryptedPassword})
+		s.repo.UpdateByUsername(ctx, database.User{Username: "admin", Password: encryptedPassword})
 	}
 }
 
@@ -175,7 +183,7 @@ func (s *AuthService) Register(ctx context.Context, input RegisterInput) error {
 		User:       user,
 	}
 
-	err := s.UserRepo.CreateUserWithActivation(ctx, &user, &activationCode)
+	err := s.repo.CreateUserWithActivation(ctx, &user, &activationCode)
 	if err != nil {
 		return ErrUserAlreadyExist
 	}
@@ -234,7 +242,7 @@ func (s *AuthService) BatchRegister(ctx context.Context, csvContent string) erro
 			Expiration: time.Now().Add(24 * time.Hour),
 		}
 
-		err := s.UserRepo.CreateUserWithActivation(ctx, user, activation)
+		err := s.repo.CreateUserWithActivation(ctx, user, activation)
 		if err != nil {
 			return fmt.Errorf("creating user %s: %w", username, err)
 		}

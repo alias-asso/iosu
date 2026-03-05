@@ -3,13 +3,10 @@ package server
 import (
 	"errors"
 	"io"
-	"math/rand"
 	"net/http"
 	"time"
 
-	"github.com/alias-asso/iosu/internal/config"
 	"github.com/alias-asso/iosu/internal/service"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 // route handler

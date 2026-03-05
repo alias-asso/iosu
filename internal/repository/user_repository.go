@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
-	"time"
 
 	"github.com/alias-asso/iosu/internal/database"
 	"gorm.io/gorm"
@@ -11,9 +9,9 @@ import (
 )
 
 type UserRepository interface {
-	UpdateByUsername(ctx context.Context, user *database.User) error
+	UpdateByUsername(ctx context.Context, user database.User) error
 	CreateIfNotExist(ctx context.Context, user *database.User) (bool, error)
-	GetByUsername(ctx context.Context, username string) (*database.User, error)
+	GetByUsername(ctx context.Context, username string) (database.User, error)
 	CreateUserWithActivation(ctx context.Context, user *database.User, activation *database.ActivationCode) error
 }
 
