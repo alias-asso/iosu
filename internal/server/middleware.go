@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/alias-asso/iosu/internal/service"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -14,7 +15,7 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		token, err := jwt.ParseWithClaims(cookie.Value, &Claims{}, func(token *jwt.Token) (any, error) {
+		token, err := jwt.ParseWithClaims(cookie.Value, &service.Claims{}, func(token *jwt.Token) (any, error) {
 			return []byte(s.cfg.JwtKey), nil
 		})
 
@@ -23,7 +24,7 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		claims, ok := token.Claims.(*Claims)
+		claims, ok := token.Claims.(*service.Claims)
 		if !ok {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
@@ -36,7 +37,7 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 
 func (s *Server) withAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		claims := r.Context().Value("claims").(*Claims)
+		claims := r.Context().Value("claims").(*service.Claims)
 		if !claims.Admin {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return

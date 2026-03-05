@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -37,29 +38,24 @@ func main() {
 
 	err, db := database.ConnectDb(config)
 	if err != nil {
-		log.Fatalln("Error connecting to the database")
+		log.Fatalln("Error connecting to the database.")
 	}
 
 	contestRepo := repository.NewGormContestRepository(db)
+	userRepo := repository.NewGormUserRepository(db)
 
-	contestService := &service.ContestService{
-		Repo:    contestRepo,
-		DataDir: config.DataDirectory,
-	}
+	contestService := service.NewConstestService(contestRepo, config.DataDirectory)
+	authService := service.NewAuthService(userRepo, config.JwtKey, config.DefaultAdminPassword)
 
 	mux := http.NewServeMux()
-	server := &server.Server{
-		ContestService: contestService,
-		Mux:            mux,
-		Cfg:            config,
-	}
+	server := server.NewServer(&contestService, &authService, mux, config)
 
 	err = database.Migrate(db)
 	if err != nil {
-		return err
+		log.Fatalln("Error during database migration.")
 	}
 
-	createDefaultAdmin(db, &config, context.Background())
+	authService.CreateDefaultAdmin(context.Background())
 
 	server.Start(config.ServerPort)
 }
