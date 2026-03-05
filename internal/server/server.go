@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -8,8 +9,13 @@ import (
 	"github.com/alias-asso/iosu/internal/service"
 )
 
+type contestService interface {
+	CreateContest(ctx context.Context, input service.CreateContestInput) error
+	UpdateContest(ctx context.Context, input service.UpdateContestInput) error
+}
+
 type Server struct {
-	contestService *service.ContestService
+	contestService contestService
 	authService    *service.AuthService
 	mux            *http.ServeMux
 	cfg            *config.Config

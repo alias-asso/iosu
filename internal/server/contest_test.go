@@ -1,63 +1,101 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
 
-	"github.com/alias-asso/iosu/internal/config"
-	"github.com/alias-asso/iosu/internal/database"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
+	"github.com/alias-asso/iosu/internal/service"
 )
 
-func newTestServer(t *testing.T) *Server {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
+type mockContestService struct {
+	createFn func(ctx context.Context, input service.CreateContestInput) error
+	updateFn func(ctx context.Context, input service.UpdateContestInput) error
+}
 
-	err = db.AutoMigrate(&database.Contest{})
-	if err != nil {
-		t.Fatal(err)
-	}
+func (m *mockContestService) CreateContest(ctx context.Context, input service.CreateContestInput) error {
+	return m.createFn(ctx, input)
+}
 
-	return &Server{
-		db: db,
-		cfg: &config.Config{
-			DataDirectory: t.TempDir(),
+func (m *mockContestService) UpdateContest(ctx context.Context, input service.UpdateContestInput) error {
+	return m.updateFn(ctx, input)
+}
+
+func TestPostCreateContest(t *testing.T) {
+
+	service := &mockContestService{
+		createFn: func(ctx context.Context, input service.CreateContestInput) error {
+			return nil
 		},
+	}
+
+	server := &Server{
+		contestService: service,
+	}
+
+	form := url.Values{}
+	form.Set("name", "contest")
+	form.Set("startTime", "2025-01-01T10:00")
+	form.Set("endTime", "2025-01-01T12:00")
+
+	req := httptest.NewRequest(http.MethodPost, "/contest", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+
+	server.postCreateContest(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201 got %d", w.Code)
 	}
 }
 
-func TestCreateContest(t *testing.T) {
-	server := newTestServer(t)
-	t.Run("NewContest", func(t *testing.T) {
-		form := url.Values{}
-		form.Set("name", "contest1")
-		form.Set("startTime", "2025-01-01T10:00")
-		form.Set("endTime", "2025-01-01T12:00")
+func TestPatchUpdateContest(t *testing.T) {
 
-		req := httptest.NewRequest(http.MethodPost, "/contest",
-			strings.NewReader(form.Encode()))
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	service := &mockContestService{
+		updateFn: func(ctx context.Context, input service.UpdateContestInput) error {
+			return nil
+		},
+	}
 
-		w := httptest.NewRecorder()
+	server := &Server{
+		contestService: service,
+	}
 
-		server.postCreateContest(w, req)
+	form := url.Values{}
+	form.Set("id", "1")
+	form.Set("name", "updated")
 
-		if w.Code != http.StatusOK {
-			t.Fatalf("expected 200 got %d", w.Code)
-		}
+	req := httptest.NewRequest(http.MethodPatch, "/contest", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		// Verify DB actually contains the contest
-		var count int64
-		server.db.Model(&database.Contest{}).Count(&count)
+	w := httptest.NewRecorder()
 
-		if count != 1 {
-			t.Fatalf("expected 1 contest, got %d", count)
-		}
-	})
+	server.patchUpdateContest(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("expected 204 got %d", w.Code)
+	}
+}
+
+func TestPatchUpdateContestInvalidID(t *testing.T) {
+
+	server := &Server{}
+
+	form := url.Values{}
+	form.Set("id", "abc")
+
+	req := httptest.NewRequest(http.MethodPatch, "/contest", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	w := httptest.NewRecorder()
+
+	server.patchUpdateContest(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 got %d", w.Code)
+	}
 }
