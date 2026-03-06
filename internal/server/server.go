@@ -9,6 +9,13 @@ import (
 	"github.com/alias-asso/iosu/internal/service"
 )
 
+type authService interface {
+	Login(ctx context.Context, input service.LoginInput) (string, error)
+	Register(ctx context.Context, input service.RegisterInput) error
+	CreateDefaultAdmin(ctx context.Context)
+	BatchRegister(ctx context.Context, csvContent string) error
+}
+
 type contestService interface {
 	CreateContest(ctx context.Context, input service.CreateContestInput) error
 	UpdateContest(ctx context.Context, input service.UpdateContestInput) error
@@ -16,7 +23,7 @@ type contestService interface {
 
 type Server struct {
 	contestService contestService
-	authService    *service.AuthService
+	authService    authService
 	mux            *http.ServeMux
 	cfg            *config.Config
 }
