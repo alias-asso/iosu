@@ -1,0 +1,26 @@
+name: Test IO/SU
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      - name: Check diff between gofmt and code
+        run: diff <(gofmt -d .) <(echo -n)
+
+      - name: Test
+        run: go test ./...
