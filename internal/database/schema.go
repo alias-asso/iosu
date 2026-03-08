@@ -33,15 +33,40 @@ type Contest struct {
 
 type Difficulty struct {
 	gorm.Model
-	Name string
+	Name   string
+	Points uint
 }
 
 type Problem struct {
 	gorm.Model
-	Name         string
-	Points       int
-	DifficultyID int
-	Difficulty   Difficulty
+	Name             string
+	Slug             string
+	PointsMultiplier float64 `gorm:"default:1.0"`
+	PointsAdder      uint    `gorm:"default:0"`
+	Parts            uint    `gorm:"default:1"`
+	DifficultyID     uint
+	Difficulty       Difficulty
+	ContestID        uint
+	Contest          Contest
+}
+
+type ProblemData struct {
+	gorm.Model
+	userID    uint
+	User      User
+	ProblemID uint
+	Problem   Problem
+	Input     string
+	Output    string
+}
+
+type Solve struct {
+	gorm.Model
+	UserID    uint
+	User      User
+	ProblemID uint
+	Problem   Problem
+	Time      time.Time
 }
 
 func Migrate(db *gorm.DB) error {
