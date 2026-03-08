@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	UpdateByUsername(ctx context.Context, user database.User) error
 	CreateIfNotExist(ctx context.Context, user *database.User) (bool, error)
+	Get(ctx context.Context, userID uint) (database.User, error)
 	GetByUsername(ctx context.Context, username string) (database.User, error)
 	CreateUserWithActivation(ctx context.Context, user *database.User, activation *database.ActivationCode) error
 }
@@ -44,6 +45,10 @@ func (r *GormUserRepository) UpdateByUsername(ctx context.Context, user database
 
 func (r *GormUserRepository) GetByUsername(ctx context.Context, username string) (database.User, error) {
 	return gorm.G[database.User](r.db).Where("username = ?", username).First(ctx)
+}
+
+func (r *GormUserRepository) Get(ctx context.Context, userID uint) (database.User, error) {
+	return gorm.G[database.User](r.db).Where("id = ?", userID).First(ctx)
 }
 
 func (r *GormUserRepository) CreateUserWithActivation(
