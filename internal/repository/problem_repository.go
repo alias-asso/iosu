@@ -30,7 +30,7 @@ func NewGormProblemRepository(db *gorm.DB) *GormProblemRepository {
 	}
 }
 
-func (r *GormProblemRepository) Create(ctx context.Context, problem *database.Problem, difficulty *database.Difficulty) error {
+func (r *GormProblemRepository) Create(ctx context.Context, problem *database.Problem) error {
 	return gorm.G[database.Problem](r.db).Create(ctx, problem)
 }
 
@@ -56,7 +56,7 @@ func (r *GormProblemRepository) Update(
 }
 
 func (r *GormProblemRepository) GetBySlug(ctx context.Context, slug string) (database.Problem, error) {
-	return gorm.G[database.Problem](r.db).Select("slug = ?", slug).First(ctx)
+	return gorm.G[database.Problem](r.db).Where("slug = ?", slug).First(ctx)
 }
 
 func (r *GormProblemRepository) CreateDifficulty(ctx context.Context, difficulty *database.Difficulty) error {
