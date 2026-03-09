@@ -66,6 +66,7 @@ type Solve struct {
 	User      User
 	ProblemID uint
 	Problem   Problem
+	Parts     uint
 	Time      time.Time
 }
 

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/repository"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 var (
@@ -86,20 +88,42 @@ type GetProblemPartHtmlInput struct {
 }
 
 func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProblemPartHtmlInput) ([]string, error) {
-	user, err := s.authService.repo.Get(ctx, input.UserID)
+	_, err := s.authService.repo.Get(ctx, input.UserID)
 	if err != nil {
-		return make([]string, 0), ErrUserNotFound
-	}
-	problem, err := s.repo.GetBySlug(ctx, input.Slug)
-	if err != nil {
-		return make([]string, 0), ErrProblemNotFound
+		return nil, ErrUserNotFound
 	}
 
-	for i := range problem.Parts {
-		problemPath := path.Join(s.contestService.dataDir, problem.Slug)
-		file, err := os.ReadFile(path.Join(problemPath, fmt.Sprintf("part%d.md", i)))
-		if err != nil {
-			return make([]string, 0), errors.New(fmt.Sprintf("file not found for problem %s part %d", problem.Slug, i))
-		}
+	problem, err := s.repo.GetBySlug(ctx, input.Slug)
+	if err != nil {
+		return nil, ErrProblemNotFound
 	}
+
+	var visibleParts uint = 1
+	solve, err := s.repo.GetSolveByUserAndProblem(ctx, input.UserID, problem.ID)
+	if err == nil {
+		visibleParts = min(solve.Parts+1, problem.Parts)
+	}
+
+	problemPath := path.Join(s.contestService.dataDir, problem.Slug)
+	result := make([]string, 0, visibleParts)
+
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+	)
+
+	for i := range visibleParts {
+		filePath := path.Join(problemPath, fmt.Sprintf("part%d.md", i+1))
+		file, err := os.ReadFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("file not found for problem %s part %d", problem.Slug, i+1)
+		}
+
+		var buf bytes.Buffer
+		if err := md.Convert(file, &buf); err != nil {
+			return nil, fmt.Errorf("failed to parse markdown for problem %s part %d", problem.Slug, i+1)
+		}
+		result = append(result, buf.String())
+	}
+
+	return result, nil
 }

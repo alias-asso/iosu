@@ -14,6 +14,7 @@ type ProblemRepository interface {
 	Create(ctx context.Context, problem *database.Problem) error
 	Update(ctx context.Context, id uint, problem database.Problem) error
 	GetBySlug(ctx context.Context, slug string) (database.Problem, error)
+	GetSolveByUserAndProblem(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
 
 	CreateDifficulty(ctx context.Context, difficulty *database.Difficulty) error
 	GetDifficultyByName(ctx context.Context, name string) (database.Difficulty, error)
@@ -63,4 +64,10 @@ func (r *GormProblemRepository) CreateDifficulty(ctx context.Context, difficulty
 }
 func (r *GormProblemRepository) GetDifficultyByName(ctx context.Context, name string) (database.Difficulty, error) {
 	return gorm.G[database.Difficulty](r.db).Where("name = ?", name).First(ctx)
+}
+
+func (r *GormProblemRepository) GetSolveByUserAndProblem(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
+	return gorm.G[database.Solve](r.db).
+		Where("user_id = ? AND problem_id = ?", userID, problemID).
+		First(ctx)
 }
