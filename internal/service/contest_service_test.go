@@ -10,8 +10,9 @@ import (
 )
 
 type mockContestRepo struct {
-	createFn func(ctx context.Context, contest *database.Contest) error
-	updateFn func(ctx context.Context, id uint, contest database.Contest) error
+	createFn    func(ctx context.Context, contest *database.Contest) error
+	updateFn    func(ctx context.Context, id uint, contest database.Contest) error
+	getByNameFn func(ctx context.Context, name string) (database.Contest, error)
 }
 
 func (m *mockContestRepo) Create(ctx context.Context, contest *database.Contest) error {
@@ -20,6 +21,13 @@ func (m *mockContestRepo) Create(ctx context.Context, contest *database.Contest)
 
 func (m *mockContestRepo) Update(ctx context.Context, id uint, contest database.Contest) error {
 	return m.updateFn(ctx, id, contest)
+}
+
+func (m *mockContestRepo) GetByName(ctx context.Context, name string) (database.Contest, error) {
+	if m.getByNameFn != nil {
+		return m.getByNameFn(ctx, name)
+	}
+	return database.Contest{}, nil
 }
 
 func TestCreateContest(t *testing.T) {

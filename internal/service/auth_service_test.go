@@ -13,6 +13,7 @@ type mockUserRepo struct {
 	createUserWithActivationFn func(ctx context.Context, user *database.User, activation *database.ActivationCode) error
 	createIfNotExistFn         func(ctx context.Context, user *database.User) (bool, error)
 	updateByUsernameFn         func(ctx context.Context, user database.User) error
+	getFn                      func(ctx context.Context, userID uint) (database.User, error)
 }
 
 func (m *mockUserRepo) GetByUsername(ctx context.Context, username string) (database.User, error) {
@@ -29,6 +30,13 @@ func (m *mockUserRepo) CreateIfNotExist(ctx context.Context, user *database.User
 
 func (m *mockUserRepo) UpdateByUsername(ctx context.Context, user database.User) error {
 	return m.updateByUsernameFn(ctx, user)
+}
+
+func (m *mockUserRepo) Get(ctx context.Context, userID uint) (database.User, error) {
+	if m.getFn != nil {
+		return m.getFn(ctx, userID)
+	}
+	return database.User{}, nil
 }
 
 func TestLogin(t *testing.T) {
