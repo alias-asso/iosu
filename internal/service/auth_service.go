@@ -72,7 +72,6 @@ func generateJWT(userID uint, username string, admin bool, jwtSecret string) (st
 }
 
 func randSeq(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	b := make([]rune, n)
