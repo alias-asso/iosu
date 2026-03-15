@@ -44,28 +44,20 @@ var (
 	ErrInvalidCSV         = errors.New("invalid csv file")
 	ErrInvalidCSVHeader   = errors.New("invalid csv header")
 	ErrInvalidInput       = errors.New("invalid input")
+	ErrUserNotFound       = errors.New("user not found")
 )
 
 type Claims struct {
+	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
 	Admin    bool   `json:"admin"`
 	jwt.RegisteredClaims
 }
 
-type LoginInput struct {
-	Username string
-	Password string
-}
-
-type RegisterInput struct {
-	Username string
-	Email    string
-	Password string
-}
-
-func generateJWT(username string, admin bool, jwtSecret string) (string, error) {
+func generateJWT(userID uint, username string, admin bool, jwtSecret string) (string, error) {
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims := &Claims{
+		UserID:   userID,
 		Username: username,
 		Admin:    admin,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -80,7 +72,6 @@ func generateJWT(username string, admin bool, jwtSecret string) (string, error) 
 }
 
 func randSeq(n int) string {
-	rand.Seed(time.Now().UnixNano())
 	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	b := make([]rune, n)
@@ -98,6 +89,11 @@ func encryptPassword(password string) (string, error) {
 func comparePassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+type LoginInput struct {
+	Username string
+	Password string
 }
 
 func (s *AuthService) Login(ctx context.Context, input LoginInput) (string, error) {
@@ -118,7 +114,7 @@ func (s *AuthService) Login(ctx context.Context, input LoginInput) (string, erro
 		return "", ErrWrongPassword
 	}
 
-	token, err := generateJWT(input.Username, user.Admin, s.jwtSecret)
+	token, err := generateJWT(user.ID, input.Username, user.Admin, s.jwtSecret)
 	if err != nil {
 		return "", err
 	}
@@ -148,6 +144,12 @@ func (s *AuthService) CreateDefaultAdmin(ctx context.Context) {
 
 		s.repo.UpdateByUsername(ctx, database.User{Username: "admin", Password: encryptedPassword})
 	}
+}
+
+type RegisterInput struct {
+	Username string
+	Email    string
+	Password string
 }
 
 func (s *AuthService) Register(ctx context.Context, input RegisterInput) error {
