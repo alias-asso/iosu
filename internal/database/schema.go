@@ -50,13 +50,22 @@ type Problem struct {
 	Contest          Contest
 }
 
-type ProblemData struct {
+type ProblemInput struct {
 	gorm.Model
-	userID    uint
+	UserID    uint
 	User      User
 	ProblemID uint
 	Problem   Problem
 	Input     string
+}
+
+type ProblemOutput struct {
+	gorm.Model
+	UserID    uint
+	User      User
+	ProblemID uint
+	Problem   Problem
+	Part      uint
 	Output    string
 }
 
@@ -67,7 +76,6 @@ type Solve struct {
 	ProblemID uint
 	Problem   Problem
 	Parts     uint
-	Time      time.Time
 }
 
 func Migrate(db *gorm.DB) error {

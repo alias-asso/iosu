@@ -12,5 +12,8 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("POST /register/batch", s.withAuth(s.withAdmin(s.postBatchCreateAccounts)))
 
 	// Contest routes
+	s.mux.HandleFunc("GET /contest/:name:")
 	s.mux.HandleFunc("POST /contest", s.withAuth(s.withAdmin(s.postCreateContest)))
+
+	// Prob
 }

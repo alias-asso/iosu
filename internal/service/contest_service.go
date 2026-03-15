@@ -18,6 +18,7 @@ type ContestService struct {
 }
 
 var (
+	ErrContestNotFound      = errors.New("contest not found")
 	ErrNameTooLong          = errors.New("name too long")
 	ErrContestAlreadyExists = errors.New("contest already exists")
 	ErrDirectoryExists      = errors.New("directory exists")

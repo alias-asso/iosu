@@ -17,6 +17,7 @@ type ContestRepository interface {
 	Create(ctx context.Context, contest *database.Contest) error
 	Update(ctx context.Context, id uint, contest database.Contest) error
 	GetByName(ctx context.Context, name string) (database.Contest, error)
+	Get(ctx context.Context, id uint) (database.Contest, error)
 }
 
 type GormContestRepository struct {
@@ -55,4 +56,8 @@ func (r *GormContestRepository) Update(
 
 func (r *GormContestRepository) GetByName(ctx context.Context, name string) (database.Contest, error) {
 	return gorm.G[database.Contest](r.db).Select("name = ?", name).First(ctx)
+}
+
+func (r *GormContestRepository) Get(ctx context.Context, id uint) (database.Contest, error) {
+	return gorm.G[database.Contest](r.db).Select("id = ?", id).First(ctx)
 }
