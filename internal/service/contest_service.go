@@ -17,13 +17,8 @@ type ContestService struct {
 	dataDir string
 }
 
-type CreateContestInput struct {
-	Name      string
-	StartTime time.Time
-	EndTime   time.Time
-}
-
 var (
+	ErrContestNotFound      = errors.New("contest not found")
 	ErrNameTooLong          = errors.New("name too long")
 	ErrContestAlreadyExists = errors.New("contest already exists")
 	ErrDirectoryExists      = errors.New("directory exists")
@@ -35,6 +30,12 @@ func NewConstestService(repo repository.ContestRepository, dataDir string) Conte
 		repo:    repo,
 		dataDir: dataDir,
 	}
+}
+
+type CreateContestInput struct {
+	Name      string
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 func (s *ContestService) CreateContest(ctx context.Context, input CreateContestInput) error {
@@ -65,6 +66,8 @@ func (s *ContestService) CreateContest(ctx context.Context, input CreateContestI
 	if info, err := os.Stat(contestDirPath); err == nil && info.IsDir() {
 		return ErrDirectoryExists
 	}
+
+	os.Mkdir(contestDirPath, os.ModePerm)
 
 	return nil
 }
