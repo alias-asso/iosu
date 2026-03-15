@@ -18,8 +18,19 @@ type mockProblemRepo struct {
 	updateFn                   func(ctx context.Context, id uint, problem database.Problem) error
 	getBySlugFn                func(ctx context.Context, slug string) (database.Problem, error)
 	getSolveByUserAndProblemFn func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
-	createDifficultyFn         func(ctx context.Context, difficulty *database.Difficulty) error
-	getDifficultyByNameFn      func(ctx context.Context, name string) (database.Difficulty, error)
+
+	createDifficultyFn    func(ctx context.Context, difficulty *database.Difficulty) error
+	getDifficultyByNameFn func(ctx context.Context, name string) (database.Difficulty, error)
+
+	createProblemInputFn  func(ctx context.Context, problemInput database.ProblemInput) error
+	createProblemOutputFn func(ctx context.Context, problemOutput database.ProblemOutput) error
+
+	getProblemInputFn  func(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error)
+	getProblemOutputFn func(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error)
+
+	createSolveFn func(ctx context.Context, solve database.Solve) error
+	updateSolveFn func(ctx context.Context, solveID uint, solve database.Solve) error
+	getSolveFn    func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
 }
 
 func (m *mockProblemRepo) Create(ctx context.Context, problem *database.Problem) error {
@@ -44,6 +55,30 @@ func (m *mockProblemRepo) CreateDifficulty(ctx context.Context, difficulty *data
 
 func (m *mockProblemRepo) GetDifficultyByName(ctx context.Context, name string) (database.Difficulty, error) {
 	return m.getDifficultyByNameFn(ctx, name)
+}
+
+func (m *mockProblemRepo) CreateProblemInput(ctx context.Context, problemInput database.ProblemInput) error {
+	return m.createProblemInputFn(ctx, problemInput)
+}
+func (m *mockProblemRepo) CreateProblemOutput(ctx context.Context, problemOutput database.ProblemOutput) error {
+	return m.createProblemOutputFn(ctx, problemOutput)
+}
+
+func (m *mockProblemRepo) GetProblemInput(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error) {
+	return m.getProblemInputFn(ctx, userID, problemID)
+}
+func (m *mockProblemRepo) GetProblemOutput(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error) {
+	return m.getProblemOutputFn(ctx, userID, problemID, part)
+}
+
+func (m *mockProblemRepo) CreateSolve(ctx context.Context, solve database.Solve) error {
+	return m.createSolveFn(ctx, solve)
+}
+func (m *mockProblemRepo) UpdateSolve(ctx context.Context, solveID uint, solve database.Solve) error {
+	return m.updateSolveFn(ctx, solveID, solve)
+}
+func (m *mockProblemRepo) GetSolve(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
+	return m.getSolveFn(ctx, userID, problemID)
 }
 
 // writePartFiles creates part1.md ... partN.md under dataDir/slug/

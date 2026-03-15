@@ -13,6 +13,7 @@ type mockContestRepo struct {
 	createFn    func(ctx context.Context, contest *database.Contest) error
 	updateFn    func(ctx context.Context, id uint, contest database.Contest) error
 	getByNameFn func(ctx context.Context, name string) (database.Contest, error)
+	getFn       func(ctx context.Context, id uint) (database.Contest, error)
 }
 
 func (m *mockContestRepo) Create(ctx context.Context, contest *database.Contest) error {
@@ -26,6 +27,13 @@ func (m *mockContestRepo) Update(ctx context.Context, id uint, contest database.
 func (m *mockContestRepo) GetByName(ctx context.Context, name string) (database.Contest, error) {
 	if m.getByNameFn != nil {
 		return m.getByNameFn(ctx, name)
+	}
+	return database.Contest{}, nil
+}
+
+func (m *mockContestRepo) Get(ctx context.Context, id uint) (database.Contest, error) {
+	if m.getFn != nil {
+		return m.getFn(ctx, id)
 	}
 	return database.Contest{}, nil
 }

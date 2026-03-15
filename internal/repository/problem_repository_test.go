@@ -217,7 +217,6 @@ func TestGetSolveByUserAndProblem(t *testing.T) {
 		UserID:    user.ID,
 		ProblemID: problem.ID,
 		Parts:     2,
-		Time:      time.Now(),
 	}
 	if err := db.Create(&solve).Error; err != nil {
 		t.Fatal(err)
