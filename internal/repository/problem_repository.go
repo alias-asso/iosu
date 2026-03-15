@@ -8,7 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
-var ErrProblemNotFound = errors.New("problem not found")
+var (
+	ErrProblemNotFound = errors.New("problem not found")
+	ErrSolveNotFound   = errors.New("solve not found")
+)
 
 type ProblemRepository interface {
 	Create(ctx context.Context, problem *database.Problem) error
@@ -18,6 +21,16 @@ type ProblemRepository interface {
 
 	CreateDifficulty(ctx context.Context, difficulty *database.Difficulty) error
 	GetDifficultyByName(ctx context.Context, name string) (database.Difficulty, error)
+
+	CreateProblemInput(ctx context.Context, problemInput database.ProblemInput) error
+	CreateProblemOutput(ctx context.Context, problemOutput database.ProblemOutput) error
+
+	GetProblemInput(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error)
+	GetProblemOutput(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error)
+
+	CreateSolve(ctx context.Context, solve database.Solve) error
+	UpdateSolve(ctx context.Context, solveID uint, solve database.Solve) error
+	GetSolve(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
 }
 
 type GormProblemRepository struct {
@@ -70,4 +83,40 @@ func (r *GormProblemRepository) GetSolveByUserAndProblem(ctx context.Context, us
 	return gorm.G[database.Solve](r.db).
 		Where("user_id = ? AND problem_id = ?", userID, problemID).
 		First(ctx)
+}
+
+func (r *GormProblemRepository) CreateProblemInput(ctx context.Context, problemInput database.ProblemInput) error {
+	return gorm.G[database.ProblemInput](r.db).Create(ctx, &problemInput)
+}
+
+func (r *GormProblemRepository) CreateProblemOutput(ctx context.Context, problemOutput database.ProblemOutput) error {
+	return gorm.G[database.ProblemOutput](r.db).Create(ctx, &problemOutput)
+}
+
+func (r *GormProblemRepository) GetProblemInput(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error) {
+	return gorm.G[database.ProblemInput](r.db).Where("user_id = ? AND problem_id = ?", userID, problemID).First(ctx)
+}
+
+func (r *GormProblemRepository) GetProblemOutput(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error) {
+	return gorm.G[database.ProblemOutput](r.db).Where("user_id = ? AND problem_id = ? AND part = ?", userID, problemID, part).First(ctx)
+}
+
+func (r *GormProblemRepository) CreateSolve(ctx context.Context, solve database.Solve) error {
+	return gorm.G[database.Solve](r.db).Create(ctx, &solve)
+}
+
+func (r *GormProblemRepository) UpdateSolve(ctx context.Context, solveID uint, solve database.Solve) error {
+	_, err := gorm.G[database.Solve](r.db).Where("id = ?", solveID).Updates(ctx, solve)
+	return err
+}
+
+func (r *GormProblemRepository) GetSolve(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
+	solve, err := gorm.G[database.Solve](r.db).Where("user_id = ? and problem_id = ?", userID, problemID).First(ctx)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return database.Solve{}, ErrSolveNotFound
+		}
+		return database.Solve{}, err
+	}
+	return solve, nil
 }

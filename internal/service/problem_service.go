@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/repository"
@@ -17,6 +18,12 @@ import (
 var (
 	ErrDifficultyNotFound = errors.New("difficulty not found")
 	ErrProblemNotFound    = errors.New("problem not found")
+	ErrPartTooBig         = errors.New("this part is too big")
+	ErrCreatingData       = errors.New("internal error creating problem data")
+	ErrContestNotStarted  = errors.New("contest has not started")
+	ErrContestFinished    = errors.New("contest has finished")
+	ErrOutputNotFound     = errors.New("output not found")
+	ErrUnableToSolve      = errors.New("unable to solve problem")
 )
 
 type ProblemService struct {
@@ -126,4 +133,127 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 	}
 
 	return result, nil
+}
+
+type CreateProblemDataInput struct {
+	UserID       uint
+	Slug         string
+	InputValue   string
+	OutputValues []string
+}
+
+func (s *ProblemService) CreateProblemData(ctx context.Context, input CreateProblemDataInput) error {
+	problem, err := s.repo.GetBySlug(ctx, input.Slug)
+	if err != nil {
+		return ErrProblemNotFound
+	}
+	if uint(len(input.OutputValues)) != problem.Parts {
+		return ErrPartTooBig
+	}
+	user, err := s.authService.repo.Get(ctx, input.UserID)
+	if err != nil {
+		return ErrUserNotFound
+	}
+
+	for i, out := range input.OutputValues {
+		problemOutput := database.ProblemOutput{
+			UserID:    user.ID,
+			ProblemID: problem.ID,
+			Part:      uint(i + 1),
+			Output:    out,
+		}
+		err := s.repo.CreateProblemOutput(ctx, problemOutput)
+		if err != nil {
+			return ErrCreatingData
+		}
+	}
+
+	problemInput := database.ProblemInput{
+		UserID:    user.ID,
+		ProblemID: problem.ID,
+		Input:     input.InputValue,
+	}
+
+	err = s.repo.CreateProblemInput(ctx, problemInput)
+	if err != nil {
+		return ErrCreatingData
+	}
+
+	return nil
+}
+
+type SubmitInput struct {
+	UserID uint
+	Slug   string
+	Value  string
+	Part   uint
+}
+
+func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, error) {
+	// Get problem + user + contest
+	problem, err := s.repo.GetBySlug(ctx, input.Slug)
+	if err != nil {
+		return false, ErrProblemNotFound
+	}
+	if input.Part >= problem.Parts {
+		return false, ErrPartTooBig
+	}
+
+	user, err := s.authService.repo.Get(ctx, input.UserID)
+	if err != nil {
+		return false, ErrUserNotFound
+	}
+
+	contest, err := s.contestService.repo.Get(ctx, problem.ContestID)
+	if err != nil {
+		return false, ErrContestNotFound
+	}
+
+	// Check if contest not finished/started
+	currentTime := time.Now()
+	if currentTime.Before(contest.StartTime) {
+		return false, ErrContestNotStarted
+	}
+	if currentTime.After(contest.EndTime) {
+		return false, ErrContestFinished
+	}
+
+	// Get output
+	outputData, err := s.repo.GetProblemOutput(ctx, user.ID, problem.ID, input.Part)
+	if err != nil {
+		return false, ErrOutputNotFound
+	}
+
+	// Check submited value
+	if outputData.Output != input.Value {
+		return false, nil
+	}
+
+	// Create solve
+	solve := database.Solve{
+		UserID:    user.ID,
+		ProblemID: problem.ID,
+		Parts:     input.Part,
+	}
+
+	// First part -> create solve
+	if input.Part <= 1 {
+		err := s.repo.CreateSolve(ctx, solve)
+		if err != nil {
+			return false, ErrUnableToSolve
+		}
+		return true, nil
+	}
+
+	// Else update solve
+	previousSolve, err := s.repo.GetSolve(ctx, user.ID, problem.ID)
+	if err != nil {
+		return false, ErrUnableToSolve
+	}
+
+	err = s.repo.UpdateSolve(ctx, previousSolve.ID, solve)
+	if err != nil {
+		return false, ErrUnableToSolve
+	}
+	return true, nil
 }
