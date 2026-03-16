@@ -257,3 +257,19 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 	}
 	return true, nil
 }
+
+type GetProblemsInput struct {
+	ContestName string
+}
+
+func (s *ProblemService) GetProblems(ctx context.Context, input GetProblemsInput) ([]database.Problem, error) {
+	contest, err := s.contestService.repo.GetByName(ctx, input.ContestName)
+	if err != nil {
+		return []database.Problem{}, ErrContestNotFound
+	}
+	problems, err := s.repo.GetAll(ctx, contest.ID)
+	if err != nil {
+		return []database.Problem{}, ErrProblemNotFound
+	}
+	return problems, nil
+}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/alias-asso/iosu/internal/config"
+	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/service"
 )
 
@@ -21,9 +22,17 @@ type contestService interface {
 	UpdateContest(ctx context.Context, input service.UpdateContestInput) error
 }
 
+type problemService interface {
+	GetProblemPartsHtml(ctx context.Context, input service.GetProblemPartHtmlInput) ([]string, error)
+	CreateProblemData(ctx context.Context, input service.CreateProblemDataInput) error
+	Submit(ctx context.Context, input service.SubmitInput) (bool, error)
+	GetProblems(ctx context.Context, input service.GetProblemsInput) ([]database.Problem, error)
+}
+
 type Server struct {
 	contestService contestService
 	authService    authService
+	problemService problemService
 	mux            *http.ServeMux
 	cfg            *config.Config
 }

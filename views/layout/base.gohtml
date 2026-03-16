@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title></title>
-    <link href="/css/style.css" rel="stylesheet" />
-    <meta name="description" content="" />
+    <title>{{ .Title }}</title>
+    <link href="/static/reset.css" rel="stylesheet" />
+    <link href="/static/style.css" rel="stylesheet" />
     <!-- Open Graph -->
     <meta name="og:title" content="" />
     <meta name="og:type" content="website" />
@@ -18,5 +18,6 @@
   <body>
     {{ template "header.gohtml" . }}
     {{ block "content" . }}{{ end }}
+    {{ template "footer.gohtml" . }}
   </body>
 </html>

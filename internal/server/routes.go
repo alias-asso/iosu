@@ -1,7 +1,13 @@
 package server
 
+import "net/http"
+
 func registerRoutes(s *Server) {
 	s.mux.HandleFunc("/", s.getNotFound)
+
+	// static assets
+	fileServer := http.FileServer(http.Dir("./static/"))
+	s.mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
 	// Login routes
 	s.mux.HandleFunc("GET /login", s.getLogin)
@@ -12,8 +18,9 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("POST /register/batch", s.withAuth(s.withAdmin(s.postBatchCreateAccounts)))
 
 	// Contest routes
-	// s.mux.HandleFunc("GET /contest/:name:")
+	s.mux.HandleFunc("GET /contest/{name}", s.withAuth(s.getContest))
 	s.mux.HandleFunc("POST /contest", s.withAuth(s.withAdmin(s.postCreateContest)))
 
-	// Prob
+	// Problem routes
+	// s.mux.HandleFunc("GET /contest/{name}/{slug}", s.withAuth(s.getProblem))
 }

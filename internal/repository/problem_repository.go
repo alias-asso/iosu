@@ -6,6 +6,7 @@ import (
 
 	"github.com/alias-asso/iosu/internal/database"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 var (
@@ -18,6 +19,7 @@ type ProblemRepository interface {
 	Update(ctx context.Context, id uint, problem database.Problem) error
 	GetBySlug(ctx context.Context, slug string) (database.Problem, error)
 	GetSolveByUserAndProblem(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
+	GetAll(ctx context.Context, contestID uint) ([]database.Problem, error)
 
 	CreateDifficulty(ctx context.Context, difficulty *database.Difficulty) error
 	GetDifficultyByName(ctx context.Context, name string) (database.Difficulty, error)
@@ -119,4 +121,8 @@ func (r *GormProblemRepository) GetSolve(ctx context.Context, userID uint, probl
 		return database.Solve{}, err
 	}
 	return solve, nil
+}
+
+func (r *GormProblemRepository) GetAll(ctx context.Context, contestID uint) ([]database.Problem, error) {
+	return gorm.G[database.Problem](r.db).Joins(clause.LeftJoin.Association("Contest"), nil).Find(ctx)
 }
