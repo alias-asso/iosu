@@ -2,3 +2,5 @@ node_modules
 db.sqlite
 main
 dist
+iosu
+iosud
