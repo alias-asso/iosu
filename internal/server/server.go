@@ -33,9 +33,9 @@ type problemService interface {
 }
 
 type Server struct {
-	contestService contestService
-	authService    authService
-	problemService problemService
+	contestService *service.ContestService
+	authService    *service.AuthService
+	problemService *service.ProblemService
 	mux            *http.ServeMux
 	cfg            *config.Config
 }

@@ -19,6 +19,7 @@ var (
 
 	contestCreateCmd       = flag.NewFlagSet("create", flag.ExitOnError)
 	contestCreateName      = contestCreateCmd.String("name", "", "contest name")
+	contestCreateSlug      = contestCreateCmd.String("slug", "", "contest slug")
 	contestCreateStartTime = contestCreateCmd.String("start-time", "", "contest start time (yyyy-mm-dd hh:mm:ss)")
 	contestCreateEndTime   = contestCreateCmd.String("end-time", "", "contest end time (yyyy-mm-dd hh:mm:ss)")
 
@@ -111,6 +112,7 @@ func main() {
 			_, services := parseConfigFile()
 
 			contestName := *contestCreateName
+			contestSlug := *contestCreateSlug
 			contestStartTime, err := time.Parse("2006-01-02 15:04:05", *contestCreateStartTime)
 			if err != nil {
 				fmt.Println("[Error] Unable to parse start time.")
@@ -123,6 +125,7 @@ func main() {
 			}
 			input := service.CreateContestInput{
 				Name:      contestName,
+				Slug:      contestSlug,
 				StartTime: contestStartTime,
 				EndTime:   contestEndTime,
 			}

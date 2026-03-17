@@ -89,7 +89,7 @@ func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemI
 		problem.PointsMultiplier = *input.PointsMultiplier
 	}
 
-	problemDirPath := path.Join(s.dataDir, contest.Name, problem.Slug)
+	problemDirPath := path.Join(s.dataDir, contest.Slug, problem.Slug)
 
 	if _, err := os.Stat(problemDirPath); err != nil && errors.Is(err, os.ErrExist) {
 		os.Mkdir(problemDirPath, os.ModePerm)
@@ -122,7 +122,7 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 	var visibleParts uint = 1
 	solve, err := s.repo.GetSolveByUserAndProblem(ctx, input.UserID, problem.ID)
 	if err == nil {
-		visibleParts = min(solve.Parts, problem.Parts)
+		visibleParts = min(solve.Parts+1, problem.Parts)
 	}
 
 	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Name, problem.Slug)
@@ -132,9 +132,8 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 		goldmark.WithExtensions(extension.GFM),
 	)
 
-	for i := range visibleParts {
+	for i := 0; i < int(visibleParts); i++ {
 		filePath := path.Join(problemPath, fmt.Sprintf("part%d.md", i+1))
-		fmt.Println(filePath)
 		file, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("file not found for problem %s part %d", problem.Slug, i+1)
@@ -144,7 +143,7 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 		if err := md.Convert(file, &buf); err != nil {
 			return nil, fmt.Errorf("failed to parse markdown for problem %s part %d", problem.Slug, i+1)
 		}
-		result = append(result, template.HTML(buf.String()))
+		result[i] = template.HTML(buf.String())
 	}
 
 	return result, nil
@@ -219,10 +218,7 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 		return false, ErrUserNotFound
 	}
 
-	contest, err := s.contestService.repo.Get(ctx, problem.ContestID)
-	if err != nil {
-		return false, ErrContestNotFound
-	}
+	contest := problem.Contest
 
 	// Check if contest not finished/started
 	currentTime := time.Now()
@@ -274,11 +270,11 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 }
 
 type GetProblemsInput struct {
-	ContestName string
+	ContestSlug string
 }
 
 func (s *ProblemService) GetProblems(ctx context.Context, input GetProblemsInput) ([]database.Problem, error) {
-	contest, err := s.contestService.repo.GetByName(ctx, input.ContestName)
+	contest, err := s.contestService.repo.GetByName(ctx, input.ContestSlug)
 	if err != nil {
 		return []database.Problem{}, ErrContestNotFound
 	}

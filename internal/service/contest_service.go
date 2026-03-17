@@ -20,6 +20,9 @@ type ContestService struct {
 var (
 	ErrContestNotFound      = errors.New("contest not found")
 	ErrNameTooLong          = errors.New("name too long")
+	ErrSlugTooLong          = errors.New("slug too long")
+	ErrEmptyName            = errors.New("name is empty")
+	ErrEmptySlug            = errors.New("slug is empty")
 	ErrContestAlreadyExists = errors.New("contest already exists")
 	ErrDirectoryExists      = errors.New("directory exists")
 	ErrInvalidTimeRange     = errors.New("invalid time range")
@@ -34,13 +37,24 @@ func NewConstestService(repo repository.ContestRepository, dataDir string) Conte
 
 type CreateContestInput struct {
 	Name      string
+	Slug      string
 	StartTime time.Time
 	EndTime   time.Time
 }
 
 func (s *ContestService) CreateContest(ctx context.Context, input CreateContestInput) error {
+	if input.Name == "" {
+		return ErrEmptyName
+	}
+	if input.Slug == "" {
+		return ErrEmptySlug
+	}
 	if len(input.Name) >= 20 {
 		return ErrNameTooLong
+	}
+
+	if len(input.Slug) >= 20 {
+		return ErrSlugTooLong
 	}
 
 	if input.EndTime.Before(input.StartTime) {
@@ -49,6 +63,7 @@ func (s *ContestService) CreateContest(ctx context.Context, input CreateContestI
 
 	contest := database.Contest{
 		Name:      input.Name,
+		Slug:      input.Slug,
 		StartTime: input.StartTime,
 		EndTime:   input.EndTime,
 	}
@@ -75,6 +90,7 @@ func (s *ContestService) CreateContest(ctx context.Context, input CreateContestI
 type UpdateContestInput struct {
 	ID        uint
 	Name      *string
+	Slug      *string
 	StartTime *time.Time
 	EndTime   *time.Time
 }
@@ -88,6 +104,10 @@ func (s *ContestService) UpdateContest(
 
 	if input.Name != nil {
 		update.Name = *input.Name
+	}
+
+	if input.Slug != nil {
+		update.Slug = *input.Slug
 	}
 
 	if input.StartTime != nil {

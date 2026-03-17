@@ -108,9 +108,9 @@ func (s *Server) patchUpdateContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
-	contestName := r.PathValue("name")
+	contestSlug := r.PathValue("name")
 	getProblemsInput := service.GetProblemsInput{
-		ContestName: contestName,
+		ContestSlug: contestSlug,
 	}
 	problems, err := s.problemService.GetProblems(r.Context(), getProblemsInput)
 	if err != nil {

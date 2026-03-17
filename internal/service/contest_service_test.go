@@ -53,6 +53,7 @@ func TestCreateContest(t *testing.T) {
 			name: "ok",
 			input: CreateContestInput{
 				Name:      "contest",
+				Slug:      "contest",
 				StartTime: start,
 				EndTime:   end,
 			},
@@ -61,6 +62,7 @@ func TestCreateContest(t *testing.T) {
 			name: "name too long",
 			input: CreateContestInput{
 				Name:      "thisnameiswaytoolongfortheservice",
+				Slug:      "thisnameiswaytoolongfortheservice",
 				StartTime: start,
 				EndTime:   end,
 			},
@@ -70,6 +72,7 @@ func TestCreateContest(t *testing.T) {
 			name: "invalid time",
 			input: CreateContestInput{
 				Name:      "test",
+				Slug:      "test",
 				StartTime: end,
 				EndTime:   start,
 			},

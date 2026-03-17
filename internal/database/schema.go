@@ -43,6 +43,7 @@ type Problem struct {
 	gorm.Model
 	Name             string
 	Slug             string
+	Description      string
 	PointsMultiplier float64 `gorm:"default:1.0"`
 	PointsAdder      uint    `gorm:"default:0"`
 	Parts            uint    `gorm:"default:1"`
@@ -82,9 +83,10 @@ type Solve struct {
 
 type Config struct {
 	gorm.Model
-	SiteTitle     string
-	MainText      string
-	SecondaryText string
+	SiteTitle      string
+	MainText       string
+	SecondaryText  string
+	CurrentContest string
 }
 
 func Migrate(db *gorm.DB) error {

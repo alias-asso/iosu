@@ -187,8 +187,11 @@ func TestCreateProblemService(t *testing.T) {
 			},
 		}
 
+		authRepo := &mockUserRepo{}
+
+		authService := NewAuthService(authRepo, "", "")
 		contestService := NewConstestService(contestRepo, dataDir)
-		service := NewProblemService(problemRepo, &contestService)
+		service := NewProblemService(problemRepo, &contestService, &authService, dataDir)
 
 		err := service.CreateProblem(context.Background(), tt.input)
 
@@ -257,6 +260,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 	for _, tt := range tests {
 
 		dataDir := t.TempDir()
+		defer os.RemoveAll(dataDir)
 
 		if !tt.wantErr {
 			writePartFiles(t, dataDir, tt.slug, int(tt.totalParts))
@@ -295,7 +299,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 		contestService := NewConstestService(contestRepo, dataDir)
 		authService := NewAuthService(userRepo, "secret", "adminpass")
 
-		service := NewProblemService(problemRepo, &contestService)
+		service := NewProblemService(problemRepo, &contestService, &authService, dataDir)
 		service.authService = &authService
 
 		result, err := service.GetProblemPartsHtml(context.Background(), GetProblemPartHtmlInput{
@@ -312,6 +316,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 		}
 
 		if !tt.wantErr && len(result) != tt.wantPartCount {
+			fmt.Printf("%v\n", result)
 			t.Fatalf("[%s] expected %d parts, got %d", tt.name, tt.wantPartCount, len(result))
 		}
 
@@ -320,5 +325,6 @@ func TestGetProblemPartsHtml(t *testing.T) {
 				t.Fatalf("[%s] part %d html is empty", tt.name, i+1)
 			}
 		}
+
 	}
 }
