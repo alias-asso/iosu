@@ -77,5 +77,5 @@ func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
-	s.render(w, "pages/login.gohtml", nil)
+	s.render(w, r.Context(), "pages/login.gohtml", nil)
 }

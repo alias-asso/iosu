@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"html/template"
 	"net/http"
 	"path"
@@ -12,11 +13,14 @@ type LayoutData struct {
 	Page   any
 }
 
-type HeaderData struct{}
+type HeaderData struct {
+	LoggedIn bool
+	Page     any
+}
 
 type FooterData struct{}
 
-func (s *Server) render(w http.ResponseWriter, templatePath string, pageData any) {
+func (s *Server) render(w http.ResponseWriter, ctx context.Context, templatePath string, pageData any) {
 	tpl := template.Must(template.ParseFiles(
 		"views/partials/header.gohtml",
 		"views/partials/footer.gohtml",
@@ -24,8 +28,15 @@ func (s *Server) render(w http.ResponseWriter, templatePath string, pageData any
 		path.Join("views", templatePath),
 	))
 
+	var loggedIn bool = false
+	if ctx.Value("logged_in") != nil {
+		loggedIn = ctx.Value("logged_in").(bool)
+	}
+
 	data := LayoutData{
-		Header: HeaderData{},
+		Header: HeaderData{
+			LoggedIn: loggedIn,
+			Page:     pageData},
 		Footer: FooterData{},
 		Page:   pageData,
 	}

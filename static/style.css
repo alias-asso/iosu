@@ -292,13 +292,13 @@ header {
   border-bottom: var(--border-header-size) var(--border-color) solid;
 }
 
-header .content {
+.content {
   margin: 0 auto;
   padding: 2rem 1rem;
   max-width: var(--header-max-width);
 }
 
-header .content .btn {
+.content .btn {
   --btn-color: var(--color-secondary);
   --btn-color-hover: var(--color-accent);
   --btn-text-color-hover: var(--color-black);

@@ -1,8 +1,20 @@
+{{ define "heading" }}
+
+<div class="content">
+  <h2>{{ .Page.Problem.Name }}</h2>
+  <p class="subtitle"></p>
+  <p>
+    description pb
+  </p>
+  <div class="btns">
+    <a href="/" class="btn">Votre input</a>
+  </div>
+</div>
+{{ end }}
 {{ define "content" }}
 <main>
-  <h2>{{.Title}}</h2>
   {{ range $part := .Content }}
-    {{ $part }}
+  {{ $part }}
   {{ end }}
 </main>
 {{ end }}

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 
@@ -23,7 +24,7 @@ type contestService interface {
 }
 
 type problemService interface {
-	GetProblemPartsHtml(ctx context.Context, input service.GetProblemPartHtmlInput) ([]string, error)
+	GetProblemPartsHtml(ctx context.Context, input service.GetProblemPartHtmlInput) ([]template.HTML, error)
 	CreateProblemData(ctx context.Context, input service.CreateProblemDataInput) error
 	Submit(ctx context.Context, input service.SubmitInput) (bool, error)
 	GetProblems(ctx context.Context, input service.GetProblemsInput) ([]database.Problem, error)

@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) withAuth(giveAccess bool, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
@@ -20,6 +20,11 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
+			if giveAccess {
+				ctx := context.WithValue(r.Context(), "logged_in", false)
+				next(w, r.WithContext(ctx))
+				return
+			}
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -31,6 +36,7 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		ctx := context.WithValue(r.Context(), "claims", claims)
+		ctx = context.WithValue(ctx, "logged_in", true)
 		next(w, r.WithContext(ctx))
 	}
 }

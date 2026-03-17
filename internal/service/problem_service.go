@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"os"
 	"path"
 	"time"
@@ -107,7 +108,7 @@ type GetProblemPartHtmlInput struct {
 	UserID uint
 }
 
-func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProblemPartHtmlInput) ([]string, error) {
+func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProblemPartHtmlInput) ([]template.HTML, error) {
 	_, err := s.authService.repo.Get(ctx, input.UserID)
 	if err != nil {
 		return nil, ErrUserNotFound
@@ -125,14 +126,13 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 	}
 
 	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Name, problem.Slug)
-	result := make([]string, visibleParts)
+	result := make([]template.HTML, visibleParts)
 
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 	)
 
-	for i := range visibleParts + 1 {
-		fmt.Printf("%d\n", i+1)
+	for i := range visibleParts {
 		filePath := path.Join(problemPath, fmt.Sprintf("part%d.md", i+1))
 		fmt.Println(filePath)
 		file, err := os.ReadFile(filePath)
@@ -144,7 +144,7 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 		if err := md.Convert(file, &buf); err != nil {
 			return nil, fmt.Errorf("failed to parse markdown for problem %s part %d", problem.Slug, i+1)
 		}
-		result = append(result, buf.String())
+		result = append(result, template.HTML(buf.String()))
 	}
 
 	return result, nil
