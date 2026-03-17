@@ -79,7 +79,15 @@ type Solve struct {
 }
 
 func Migrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{}, &ActivationCode{}, &Contest{}, &Difficulty{}, &Problem{})
+	err := db.AutoMigrate(
+		&User{},
+		&ActivationCode{},
+		&Contest{},
+		&Difficulty{},
+		&Problem{},
+		&ProblemInput{},
+		&ProblemOutput{},
+		&Solve{})
 	if err != nil {
 		return err
 	}

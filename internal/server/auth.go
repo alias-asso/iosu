@@ -36,10 +36,7 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(time.Hour * 4),
 	})
 
-	// w.Header().Set("HX-Redirect", "/admin")
-	// w.WriteHeader(http.StatusOK)
-	// TODO: replace with ok template
-	w.Write([]byte("logged in"))
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // route handler
@@ -77,4 +74,8 @@ func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("ok"))
+}
+
+func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
+	s.render(w, "pages/login.gohtml", nil)
 }

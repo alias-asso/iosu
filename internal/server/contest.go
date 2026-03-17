@@ -117,9 +117,12 @@ func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, service.ErrContestNotFound):
 			s.render(w, "pages/error.gohtml", err.Error())
+			return
 		default:
 			s.render(w, "pages/error.gohtml", "internal server error")
+			return
 		}
 	}
-	s.render(w, "pages/problems.gohtml", problems)
+	s.render(w, "pages/contest.gohtml", problems)
+	return
 }

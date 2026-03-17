@@ -12,7 +12,3 @@ func (s *Server) getNotFound(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error : "+err.Error(), http.StatusInternalServerError)
 	}
 }
-
-// route handler
-func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
-}

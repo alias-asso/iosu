@@ -3,7 +3,7 @@ package server
 import "net/http"
 
 func registerRoutes(s *Server) {
-	s.mux.HandleFunc("/", s.getNotFound)
+	// s.mux.HandleFunc("/", s.getNotFound)
 
 	// static assets
 	fileServer := http.FileServer(http.Dir("./static/"))
@@ -22,5 +22,5 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("POST /contest", s.withAuth(s.withAdmin(s.postCreateContest)))
 
 	// Problem routes
-	// s.mux.HandleFunc("GET /contest/{name}/{slug}", s.withAuth(s.getProblem))
+	s.mux.HandleFunc("GET /contest/{name}/{slug}", s.withAuth(s.getProblem))
 }

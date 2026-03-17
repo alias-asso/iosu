@@ -31,6 +31,7 @@ type Config struct {
 	JwtKey               string     `toml:"jwt_key"`
 	DefaultAdminPassword string     `toml:"default_admin_password"`
 	DataDirectory        string     `toml:"data_directory"`
+	DevMode              bool       `toml:"dev_mode"`
 	DbType               string     `toml:"db_type"`
 	Sqlite               SqliteDb   `toml:"sqlite"`
 	Mysql                MysqlDb    `toml:"mysql"`

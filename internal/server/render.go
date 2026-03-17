@@ -18,8 +18,8 @@ type FooterData struct{}
 
 func (s *Server) render(w http.ResponseWriter, templatePath string, pageData any) {
 	tpl := template.Must(template.ParseFiles(
-		"views/partials/header.html",
-		"views/partials/footer.html",
+		"views/partials/header.gohtml",
+		"views/partials/footer.gohtml",
 		"views/layout/base.gohtml",
 		path.Join("views", templatePath),
 	))

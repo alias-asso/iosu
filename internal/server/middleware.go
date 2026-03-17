@@ -30,7 +30,7 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "claims", &claims)
+		ctx := context.WithValue(r.Context(), "claims", claims)
 		next(w, r.WithContext(ctx))
 	}
 }

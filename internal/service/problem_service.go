@@ -16,14 +16,16 @@ import (
 )
 
 var (
-	ErrDifficultyNotFound = errors.New("difficulty not found")
-	ErrProblemNotFound    = errors.New("problem not found")
-	ErrPartTooBig         = errors.New("this part is too big")
-	ErrCreatingData       = errors.New("internal error creating problem data")
-	ErrContestNotStarted  = errors.New("contest has not started")
-	ErrContestFinished    = errors.New("contest has finished")
-	ErrOutputNotFound     = errors.New("output not found")
-	ErrUnableToSolve      = errors.New("unable to solve problem")
+	ErrDifficultyNotFound    = errors.New("difficulty not found")
+	ErrProblemNotFound       = errors.New("problem not found")
+	ErrPartTooBig            = errors.New("this part is too big")
+	ErrCreatingData          = errors.New("internal error creating problem data")
+	ErrContestNotStarted     = errors.New("contest has not started")
+	ErrContestFinished       = errors.New("contest has finished")
+	ErrOutputNotFound        = errors.New("output not found")
+	ErrUnableToSolve         = errors.New("unable to solve problem")
+	ErrUnableToCreateProblem = errors.New("unable to create problem")
+	ErrPartNotFound          = errors.New("a part has not been found")
 )
 
 type ProblemService struct {
@@ -33,10 +35,12 @@ type ProblemService struct {
 	dataDir        string
 }
 
-func NewProblemService(repo repository.ProblemRepository, contestService *ContestService) ProblemService {
+func NewProblemService(repo repository.ProblemRepository, contestService *ContestService, authService *AuthService, dataDir string) ProblemService {
 	return ProblemService{
 		repo:           repo,
 		contestService: contestService,
+		authService:    authService,
+		dataDir:        dataDir,
 	}
 }
 
@@ -51,6 +55,10 @@ type CreateProblemInput struct {
 }
 
 func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemInput) error {
+	if len(input.Name) >= 20 {
+		return ErrNameTooLong
+	}
+
 	difficulty, err := s.repo.GetDifficultyByName(ctx, input.DifficultyName)
 	if err != nil {
 		return ErrDifficultyNotFound
@@ -86,6 +94,11 @@ func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemI
 		os.Mkdir(problemDirPath, os.ModePerm)
 	}
 
+	err = s.repo.Create(ctx, &problem)
+	if err != nil {
+		return ErrUnableToCreateProblem
+	}
+
 	return nil
 }
 
@@ -108,18 +121,20 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 	var visibleParts uint = 1
 	solve, err := s.repo.GetSolveByUserAndProblem(ctx, input.UserID, problem.ID)
 	if err == nil {
-		visibleParts = min(solve.Parts+1, problem.Parts)
+		visibleParts = min(solve.Parts, problem.Parts)
 	}
 
-	problemPath := path.Join(s.contestService.dataDir, problem.Slug)
-	result := make([]string, 0, visibleParts)
+	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Name, problem.Slug)
+	result := make([]string, visibleParts)
 
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 	)
 
-	for i := range visibleParts {
+	for i := range visibleParts + 1 {
+		fmt.Printf("%d\n", i+1)
 		filePath := path.Join(problemPath, fmt.Sprintf("part%d.md", i+1))
+		fmt.Println(filePath)
 		file, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, fmt.Errorf("file not found for problem %s part %d", problem.Slug, i+1)
@@ -272,4 +287,39 @@ func (s *ProblemService) GetProblems(ctx context.Context, input GetProblemsInput
 		return []database.Problem{}, ErrProblemNotFound
 	}
 	return problems, nil
+}
+
+type CreateDifficultyInput struct {
+	DifficultyName string
+	Points         uint
+}
+
+func (s *ProblemService) CreateDifficulty(ctx context.Context, input CreateDifficultyInput) error {
+	if len(input.DifficultyName) > 20 {
+		return ErrNameTooLong
+	}
+	difficulty := database.Difficulty{
+		Name:   input.DifficultyName,
+		Points: input.Points,
+	}
+	err := s.repo.CreateDifficulty(ctx, &difficulty)
+	if err != nil {
+		return ErrCreatingData
+	}
+	return nil
+}
+
+type GetProblemInput struct {
+	Slug string
+}
+
+func (s *ProblemService) GetProblem(ctx context.Context, input GetProblemInput) (database.Problem, error) {
+	if len(input.Slug) > 20 {
+		return database.Problem{}, ErrNameTooLong
+	}
+	problem, err := s.repo.GetBySlug(ctx, input.Slug)
+	if err != nil {
+		return database.Problem{}, ErrProblemNotFound
+	}
+	return problem, nil
 }

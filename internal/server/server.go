@@ -27,6 +27,8 @@ type problemService interface {
 	CreateProblemData(ctx context.Context, input service.CreateProblemDataInput) error
 	Submit(ctx context.Context, input service.SubmitInput) (bool, error)
 	GetProblems(ctx context.Context, input service.GetProblemsInput) ([]database.Problem, error)
+	CreateDifficulty(ctx context.Context, input service.CreateDifficultyInput) error
+	GetProblem(ctx context.Context, input service.GetProblemInput) (database.Problem, error)
 }
 
 type Server struct {
@@ -37,10 +39,11 @@ type Server struct {
 	cfg            *config.Config
 }
 
-func NewServer(contestService *service.ContestService, authService *service.AuthService, mux *http.ServeMux, cfg *config.Config) *Server {
+func NewServer(contestService *service.ContestService, authService *service.AuthService, problemService *service.ProblemService, mux *http.ServeMux, cfg *config.Config) *Server {
 	return &Server{
 		contestService: contestService,
 		authService:    authService,
+		problemService: problemService,
 		mux:            mux,
 		cfg:            cfg,
 	}
@@ -61,9 +64,9 @@ func NewServer(contestService *service.ContestService, authService *service.Auth
 // 	}, nil
 // }
 
-func (s *Server) SetupServer(config config.Config) error {
+func (s *Server) SetupServer(config *config.Config) error {
 	registerRoutes(s)
-
+	log.Println("Registered routes.")
 	return nil
 }
 

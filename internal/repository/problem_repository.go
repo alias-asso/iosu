@@ -71,7 +71,7 @@ func (r *GormProblemRepository) Update(
 }
 
 func (r *GormProblemRepository) GetBySlug(ctx context.Context, slug string) (database.Problem, error) {
-	return gorm.G[database.Problem](r.db).Where("slug = ?", slug).First(ctx)
+	return gorm.G[database.Problem](r.db).Preload("Contest", nil).Where("slug = ?", slug).First(ctx)
 }
 
 func (r *GormProblemRepository) CreateDifficulty(ctx context.Context, difficulty *database.Difficulty) error {
