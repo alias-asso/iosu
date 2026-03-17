@@ -26,9 +26,11 @@ type ActivationCode struct {
 
 type Contest struct {
 	gorm.Model
-	Name      string
-	StartTime time.Time
-	EndTime   time.Time
+	Name        string
+	Slug        string
+	Description string
+	StartTime   time.Time
+	EndTime     time.Time
 }
 
 type Difficulty struct {
@@ -78,6 +80,13 @@ type Solve struct {
 	Parts     uint
 }
 
+type Config struct {
+	gorm.Model
+	SiteTitle     string
+	MainText      string
+	SecondaryText string
+}
+
 func Migrate(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&User{},
@@ -87,7 +96,8 @@ func Migrate(db *gorm.DB) error {
 		&Problem{},
 		&ProblemInput{},
 		&ProblemOutput{},
-		&Solve{})
+		&Solve{},
+		&Config{})
 	if err != nil {
 		return err
 	}
