@@ -36,15 +36,17 @@ type Server struct {
 	contestService *service.ContestService
 	authService    *service.AuthService
 	problemService *service.ProblemService
+	configService  *service.ConfigService
 	mux            *http.ServeMux
 	cfg            *config.Config
 }
 
-func NewServer(contestService *service.ContestService, authService *service.AuthService, problemService *service.ProblemService, mux *http.ServeMux, cfg *config.Config) *Server {
+func NewServer(contestService *service.ContestService, authService *service.AuthService, problemService *service.ProblemService, configService *service.ConfigService, mux *http.ServeMux, cfg *config.Config) *Server {
 	return &Server{
 		contestService: contestService,
 		authService:    authService,
 		problemService: problemService,
+		configService:  configService,
 		mux:            mux,
 		cfg:            cfg,
 	}

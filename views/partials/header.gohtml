@@ -2,13 +2,13 @@
 <header>
   <nav>
     <input type="checkbox" id="toggle-navbar" />
-    <h1><a href="/">IO/SU</a></h1>
+    <h1><a href="/">{{ .Config.SiteTitle }}</a></h1>
     <label for="toggle-navbar" class="navbar__toggle">☰</label>
     <ul class="navbar__links">
       <li><a href="/">Accueil</a></li>
       <li><a href="/help">Aide</a></li>
       <li><a href="/rules">Règles</a></li>
-      <li><a href="/contest">Problèmes</a></li>
+      <li><a href="/contest/{{ .Config.CurrentContest }}">Problèmes</a></li>
       <!--<li><a href="/problems.html">Compétition</a></li>-->
       {{ if .LoggedIn }}
       <li><a href="/logout">Déconnexion</a></li>

@@ -17,9 +17,10 @@
     <meta name="og:site_name" content="IO/SU 2026" />
   </head>
   <body>
-    {{ template "header" .Header }}
-    {{ template "content" .Page }}
+    {{ template "header" . }}
+    {{ template "content" . }}
     {{ template "footer" . }}
+    <script src="/static/js/htmx.min.js"></script>
   </body>
 </html>
 {{ end }}

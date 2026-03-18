@@ -9,5 +9,6 @@ func (s *Server) getIndex(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+
 	s.render(w, r.Context(), "pages/index.gohtml", nil)
 }

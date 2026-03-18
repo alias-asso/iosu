@@ -50,6 +50,7 @@ type CreateProblemInput struct {
 	DifficultyName   string
 	Name             string
 	Slug             string
+	Author           string
 	PointsMultiplier *float64
 	PointsAdder      *uint
 	Parts            *uint
@@ -60,6 +61,13 @@ func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemI
 		return ErrNameTooLong
 	}
 
+	if len(input.Slug) >= 20 {
+		return ErrSlugTooLong
+	}
+
+	if len(input.Author) >= 40 {
+		return ErrSlugTooLong
+	}
 	difficulty, err := s.repo.GetDifficultyByName(ctx, input.DifficultyName)
 	if err != nil {
 		return ErrDifficultyNotFound
@@ -73,6 +81,7 @@ func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemI
 	problem := database.Problem{
 		Name:         input.Name,
 		Slug:         input.Slug,
+		Author:       input.Author,
 		DifficultyID: difficulty.ID,
 		ContestID:    contest.ID,
 	}

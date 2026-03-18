@@ -43,7 +43,7 @@ type Problem struct {
 	gorm.Model
 	Name             string
 	Slug             string
-	Description      string
+	Author           string
 	PointsMultiplier float64 `gorm:"default:1.0"`
 	PointsAdder      uint    `gorm:"default:0"`
 	Parts            uint    `gorm:"default:1"`
@@ -83,6 +83,7 @@ type Solve struct {
 
 type Config struct {
 	gorm.Model
+	Singleton      int `gorm:"uniqueIndex"`
 	SiteTitle      string
 	MainText       string
 	SecondaryText  string

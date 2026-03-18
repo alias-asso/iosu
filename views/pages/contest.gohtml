@@ -27,7 +27,7 @@
   <!-- </article> -->
   <!-- </article> -->
   <article class="article__container grid">
-    {{ range $problem := . }}
+    {{ range $problem := .Page }}
     <article>
       <h3>{{ $problem.Name }}</h3>
       <p class="subtitle">{{ $problem.Difficulty.Name }}</p>

@@ -13,7 +13,7 @@
 {{ end }}
 {{ define "content" }}
 <main>
-  {{ range $part := .Content }}
+  {{ range $part := .Page.Content }}
   {{ $part }}
   {{ end }}
 </main>

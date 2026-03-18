@@ -35,16 +35,23 @@ var (
 	problemCreatePointsMult  = problemCreateCmd.Float64("multiplier", 1.0, "points multiplier")
 	problemCreatePointsAdd   = problemCreateCmd.Uint("adder", 0, "how many points to add")
 	problemCreateParts       = problemCreateCmd.Uint("parts", 1, "number of parts")
+
+	configUpdateCmd            = flag.NewFlagSet("update", flag.ExitOnError)
+	configUpdateSiteTitle      = configUpdateCmd.String("site-title", "", "site title")
+	configUpdateMainText       = configUpdateCmd.String("main-text", "", "main text")
+	configUpdateSecondaryText  = configUpdateCmd.String("secondary-text", "", "secondary text")
+	configUpdateCurrentContest = configUpdateCmd.String("current-contest", "", "current contest")
 )
 
 type Services struct {
 	authService    *service.AuthService
 	contestService *service.ContestService
 	problemService *service.ProblemService
+	configService  *service.ConfigService
 }
 
 func setupCommonFlags() {
-	for _, fs := range []*flag.FlagSet{contestCreateCmd, difficultyCreateCmd, problemCreateCmd} {
+	for _, fs := range []*flag.FlagSet{contestCreateCmd, difficultyCreateCmd, problemCreateCmd, configUpdateCmd} {
 		fs.StringVar(
 			&configPath,
 			"config",
@@ -79,15 +86,18 @@ func parseConfigFile() (*config.Config, *Services) {
 	contestRepo := repository.NewGormContestRepository(db)
 	userRepo := repository.NewGormUserRepository(db)
 	problemRepo := repository.NewGormProblemRepository(db)
+	configRepo := repository.NewGormConfigRepository(db)
 
 	contestService := service.NewConstestService(contestRepo, config.DataDirectory)
 	authService := service.NewAuthService(userRepo, config.JwtKey, config.DefaultAdminPassword)
 	problemService := service.NewProblemService(problemRepo, &contestService, &authService, config.DataDirectory)
+	configService := service.NewConfigService(configRepo)
 
 	return config, &Services{
 		contestService: &contestService,
 		authService:    &authService,
 		problemService: &problemService,
+		configService:  &configService,
 	}
 }
 
@@ -182,6 +192,29 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Problem created successfully.")
+		}
+	case "config":
+		if len(os.Args) < 3 {
+			fmt.Println("[Error] Expected a subcommand.")
+			os.Exit(1)
+		}
+		switch os.Args[2] {
+		case "update":
+			configUpdateCmd.Parse(os.Args[3:])
+			_, services := parseConfigFile()
+			input := service.UpdateConfigInput{
+				SiteTitle:      configUpdateSiteTitle,
+				MainText:       configUpdateMainText,
+				SecondaryText:  configUpdateSecondaryText,
+				CurrentContest: configUpdateCurrentContest,
+			}
+			err := services.configService.UpdateConfig(context.Background(), input)
+
+			if err != nil {
+				fmt.Println("[Error] " + err.Error() + ".")
+				os.Exit(1)
+			}
+			fmt.Println("Config updated successfully.")
 		}
 	default:
 		fmt.Println("[Error] Unknown subcommand.")

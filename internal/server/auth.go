@@ -33,7 +33,7 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   int(time.Hour * 4),
+		MaxAge:   int(time.Hour * 24),
 	})
 
 	http.Redirect(w, r, "/", http.StatusFound)
