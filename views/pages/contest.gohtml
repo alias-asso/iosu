@@ -30,7 +30,8 @@
     {{ range $problem := .Page }}
     <article>
       <h3>{{ $problem.Name }}</h3>
-      <p class="subtitle">{{ $problem.Difficulty.Name }}</p>
+      <p class="subtitle">Par {{ $problem.Author }}</p>
+      <p class="subtitle">Difficulté : {{ $problem.Difficulty.Name }}</p>
       <p>
         Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut quae, consequatur, mollitia eos magnam dolor
         neque numquam ratione praesentium odio distinctio illum animi. Tempore nobis laborum autem necessitatibus

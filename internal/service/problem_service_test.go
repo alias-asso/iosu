@@ -28,10 +28,11 @@ type mockProblemRepo struct {
 	getProblemInputFn  func(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error)
 	getProblemOutputFn func(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error)
 
-	createSolveFn func(ctx context.Context, solve database.Solve) error
-	updateSolveFn func(ctx context.Context, solveID uint, solve database.Solve) error
-	getSolveFn    func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
-	getAllFn      func(ctx context.Context, contestID uint) ([]database.Problem, error)
+	createSolveFn     func(ctx context.Context, solve database.Solve) error
+	updateSolveFn     func(ctx context.Context, solveID uint, solve database.Solve) error
+	getSolveFn        func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
+	getSolvesAmountFn func(ctx context.Context, userID uint, problemID uint) (uint, error)
+	getAllFn          func(ctx context.Context, contestID uint) ([]database.Problem, error)
 }
 
 func (m *mockProblemRepo) Create(ctx context.Context, problem *database.Problem) error {
@@ -80,6 +81,10 @@ func (m *mockProblemRepo) UpdateSolve(ctx context.Context, solveID uint, solve d
 }
 func (m *mockProblemRepo) GetSolve(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
 	return m.getSolveFn(ctx, userID, problemID)
+}
+
+func (m *mockProblemRepo) GetSolvesAmount(ctx context.Context, userID uint, problemID uint) (uint, error) {
+	return m.getSolvesAmountFn(ctx, userID, problemID)
 }
 
 func (m *mockProblemRepo) GetAll(ctx context.Context, contestID uint) ([]database.Problem, error) {

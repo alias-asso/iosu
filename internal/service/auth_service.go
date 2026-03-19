@@ -45,6 +45,7 @@ var (
 	ErrInvalidCSVHeader   = errors.New("invalid csv header")
 	ErrInvalidInput       = errors.New("invalid input")
 	ErrUserNotFound       = errors.New("user not found")
+	ErrInternalError      = errors.New("internal error")
 )
 
 type Claims struct {
@@ -251,4 +252,16 @@ func (s *AuthService) BatchRegister(ctx context.Context, csvContent string) erro
 	}
 
 	return nil
+}
+
+type GetUserInput struct {
+	Username string
+}
+
+func (s *AuthService) GetUser(ctx context.Context, input GetUserInput) (database.User, error) {
+	user, err := s.repo.GetByUsername(ctx, input.Username)
+	if err != nil {
+		return database.User{}, ErrUserNotFound
+	}
+	return user, nil
 }

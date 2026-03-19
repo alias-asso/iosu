@@ -55,20 +55,20 @@ type Problem struct {
 
 type ProblemInput struct {
 	gorm.Model
-	UserID    uint
+	UserID    uint `gorm:"uniqueIndex:idx_user_problem_input"`
 	User      User
-	ProblemID uint
+	ProblemID uint `gorm:"uniqueIndex:idx_user_problem_input"`
 	Problem   Problem
 	Input     string
 }
 
 type ProblemOutput struct {
 	gorm.Model
-	UserID    uint
+	UserID    uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	User      User
-	ProblemID uint
+	ProblemID uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	Problem   Problem
-	Part      uint
+	Part      uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	Output    string
 }
 

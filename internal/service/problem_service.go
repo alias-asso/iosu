@@ -27,6 +27,7 @@ var (
 	ErrUnableToSolve         = errors.New("unable to solve problem")
 	ErrUnableToCreateProblem = errors.New("unable to create problem")
 	ErrPartNotFound          = errors.New("a part has not been found")
+	ErrAlreadySolved         = errors.New("this part has already been solved")
 )
 
 type ProblemService struct {
@@ -128,11 +129,11 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 		return nil, ErrProblemNotFound
 	}
 
-	var visibleParts uint = 1
-	solve, err := s.repo.GetSolveByUserAndProblem(ctx, input.UserID, problem.ID)
-	if err == nil {
-		visibleParts = min(solve.Parts+1, problem.Parts)
+	userSolves, err := s.repo.GetSolvesAmount(ctx, input.UserID, problem.ID)
+	if err != nil {
+		return nil, ErrInternalError
 	}
+	visibleParts := min(userSolves+1, problem.Parts)
 
 	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Name, problem.Slug)
 	result := make([]template.HTML, visibleParts)
@@ -206,10 +207,11 @@ func (s *ProblemService) CreateProblemData(ctx context.Context, input CreateProb
 }
 
 type SubmitInput struct {
-	UserID uint
-	Slug   string
-	Value  string
-	Part   uint
+	UserID      uint
+	Slug        string
+	ContestSlug string
+	Value       string
+	Part        uint
 }
 
 func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, error) {
@@ -218,7 +220,18 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 	if err != nil {
 		return false, ErrProblemNotFound
 	}
-	if input.Part >= problem.Parts {
+	if input.Part > problem.Parts {
+		return false, ErrPartTooBig
+	}
+	if problem.Contest.Slug != input.ContestSlug {
+		return false, ErrContestNotFound
+	}
+
+	solves, err := s.repo.GetSolvesAmount(ctx, input.UserID, problem.ID)
+	if solves >= input.Part {
+		return false, ErrAlreadySolved
+	}
+	if input.Part > solves+1 {
 		return false, ErrPartTooBig
 	}
 
@@ -327,4 +340,13 @@ func (s *ProblemService) GetProblem(ctx context.Context, input GetProblemInput) 
 		return database.Problem{}, ErrProblemNotFound
 	}
 	return problem, nil
+}
+
+type GetSolvesInput struct {
+	UserID    uint
+	ProblemID uint
+}
+
+func (s *ProblemService) GetSolves(ctx context.Context, input GetSolvesInput) (uint, error) {
+	return s.repo.GetSolvesAmount(ctx, input.UserID, input.ProblemID)
 }

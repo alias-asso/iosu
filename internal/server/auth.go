@@ -40,11 +40,6 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // route handler
-func (s *Server) postRegisterAccount(w http.ResponseWriter, r *http.Request) {
-	// TODO
-}
-
-// route handler
 func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("accounts")
 	if err != nil {
@@ -78,4 +73,15 @@ func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r.Context(), "pages/login.gohtml", nil)
+}
+
+func (s *Server) postLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "token",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
+	w.Header().Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusOK)
 }

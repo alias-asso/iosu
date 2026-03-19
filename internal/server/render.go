@@ -46,3 +46,14 @@ func (s *Server) render(w http.ResponseWriter, ctx context.Context, templatePath
 		return
 	}
 }
+
+func (s *Server) renderPartial(w http.ResponseWriter, _ context.Context, templatePath string, data any) {
+	tpl := template.Must(template.ParseFiles(
+		path.Join("views", templatePath),
+	))
+
+	if err := tpl.Execute(w, data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}

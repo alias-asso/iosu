@@ -9,9 +9,8 @@
       <li><a href="/help">Aide</a></li>
       <li><a href="/rules">Règles</a></li>
       <li><a href="/contest/{{ .Config.CurrentContest }}">Problèmes</a></li>
-      <!--<li><a href="/problems.html">Compétition</a></li>-->
       {{ if .LoggedIn }}
-      <li><a href="/logout">Déconnexion</a></li>
+      <li><a href="#" hx-post="/logout">Déconnexion</a></li>
       {{ else }}
       <li><a href="/login">Connexion</a></li>
       {{ end }}

@@ -1,0 +1,15 @@
+{{ if ne .Error "" }}
+<div class="response response--danger">
+  <p>{{ .Error }}</p>
+</div>
+{{ else }}
+    {{ if .Success }}
+    <div class="response response--success">
+    <p>Bonne réponse</p>
+    </div>
+    {{ else }}
+    <div class="response response--danger">
+    <p>Mauvaise réponse</p>
+    </div>
+    {{ end }}
+{{ end }}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/alias-asso/iosu/internal/config"
@@ -22,6 +23,10 @@ var (
 	contestCreateSlug      = contestCreateCmd.String("slug", "", "contest slug")
 	contestCreateStartTime = contestCreateCmd.String("start-time", "", "contest start time (yyyy-mm-dd hh:mm:ss)")
 	contestCreateEndTime   = contestCreateCmd.String("end-time", "", "contest end time (yyyy-mm-dd hh:mm:ss)")
+
+	contestDataCmd         = flag.NewFlagSet("data", flag.ExitOnError)
+	contestDataContestSlug = contestDataCmd.String("contest", "", "contest slug")
+	contestDataDirectory   = contestDataCmd.String("directory", "", "path to data directory")
 
 	difficultyCreateCmd    = flag.NewFlagSet("create", flag.ExitOnError)
 	difficultyCreateName   = difficultyCreateCmd.String("name", "", "difficulty name")
@@ -51,7 +56,7 @@ type Services struct {
 }
 
 func setupCommonFlags() {
-	for _, fs := range []*flag.FlagSet{contestCreateCmd, difficultyCreateCmd, problemCreateCmd, configUpdateCmd} {
+	for _, fs := range []*flag.FlagSet{contestCreateCmd, contestDataCmd, difficultyCreateCmd, problemCreateCmd, configUpdateCmd} {
 		fs.StringVar(
 			&configPath,
 			"config",
@@ -101,6 +106,98 @@ func parseConfigFile() (*config.Config, *Services) {
 	}
 }
 
+func runContestData(ctx context.Context, services *Services, contestSlug, directory string) {
+	dirInfo, err := os.Stat(directory)
+	if err != nil || !dirInfo.IsDir() {
+		fmt.Println("[Error] Directory not found or is not a directory: " + directory)
+		os.Exit(1)
+	}
+
+	problemDirs, err := os.ReadDir(directory)
+	if err != nil {
+		fmt.Println("[Error] Unable to read directory: " + err.Error())
+		os.Exit(1)
+	}
+
+	for _, problemDir := range problemDirs {
+		if !problemDir.IsDir() {
+			continue
+		}
+
+		problemSlug := problemDir.Name()
+		problemPath := filepath.Join(directory, problemSlug)
+
+		// Verify the problem exists in the contest.
+		input := service.GetProblemInput{
+			Slug: problemSlug,
+		}
+		problem, err := services.problemService.GetProblem(ctx, input)
+		if err != nil || problem.Contest.Slug != contestSlug {
+			fmt.Printf("[Warning] Problem '%s' not found in contest '%s', skipping directory.\n", problemSlug, contestSlug)
+			continue
+		}
+
+		userDirs, err := os.ReadDir(problemPath)
+		if err != nil {
+			fmt.Printf("[Warning] Unable to read problem directory '%s': %s, skipping.\n", problemSlug, err.Error())
+			continue
+		}
+
+		for _, userDir := range userDirs {
+			if !userDir.IsDir() {
+				continue
+			}
+
+			username := userDir.Name()
+			userPath := filepath.Join(problemPath, username)
+
+			// Verify the user exists.
+			input := service.GetUserInput{
+				Username: username,
+			}
+			user, err := services.authService.GetUser(ctx, input)
+			if err != nil {
+				fmt.Printf("[Warning] User '%s' not found, skipping directory.\n", username)
+				continue
+			}
+
+			// Read input.txt.
+			inputPath := filepath.Join(userPath, "input.txt")
+			inputBytes, err := os.ReadFile(inputPath)
+			if err != nil {
+				fmt.Printf("[Warning] No input.txt for user '%s' / problem '%s', skipping.\n", username, problemSlug)
+				continue
+			}
+			inputValue := strings.TrimSpace(string(inputBytes))
+
+			// Read all output files (output1.txt, output2.txt, ...).
+			var outputValues []string
+			for part := 1; ; part++ {
+				outputPath := filepath.Join(userPath, fmt.Sprintf("output%d.txt", part))
+				outputBytes, err := os.ReadFile(outputPath)
+				if err != nil {
+					break // No more parts.
+				}
+				outputValues = append(outputValues, strings.TrimSpace(string(outputBytes)))
+			}
+
+			createDataInput := service.CreateProblemDataInput{
+				UserID:       user.ID,
+				Slug:         problemSlug,
+				InputValue:   inputValue,
+				OutputValues: outputValues,
+			}
+
+			if err := services.problemService.CreateProblemData(ctx, createDataInput); err != nil {
+				fmt.Printf("[Error] Failed to save data for user '%s' / problem '%s': %s\n", username, problemSlug, err.Error())
+				continue
+			}
+
+			fmt.Printf("Data saved for user '%s' / problem '%s'.\n", username, problemSlug)
+		}
+	}
+}
+
 func main() {
 	setupCommonFlags()
 
@@ -145,7 +242,24 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Contest created successfully.")
+
+		case "data":
+			contestDataCmd.Parse(os.Args[3:])
+
+			if *contestDataContestSlug == "" {
+				fmt.Println("[Error] -contest flag is required.")
+				os.Exit(1)
+			}
+			if *contestDataDirectory == "" {
+				fmt.Println("[Error] -directory flag is required.")
+				os.Exit(1)
+			}
+
+			_, services := parseConfigFile()
+			runContestData(context.Background(), services, *contestDataContestSlug, *contestDataDirectory)
+			fmt.Println("Contest data import completed.")
 		}
+
 	case "difficulty":
 		if len(os.Args) < 3 {
 			fmt.Println("[Error] Expected a subcommand.")

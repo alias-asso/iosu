@@ -108,7 +108,7 @@ func (s *Server) patchUpdateContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
-	contestSlug := r.PathValue("name")
+	contestSlug := r.PathValue("slug")
 	getProblemsInput := service.GetProblemsInput{
 		ContestSlug: contestSlug,
 	}
