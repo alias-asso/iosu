@@ -46,6 +46,9 @@ var (
 	configUpdateMainText       = configUpdateCmd.String("main-text", "", "main text")
 	configUpdateSecondaryText  = configUpdateCmd.String("secondary-text", "", "secondary text")
 	configUpdateCurrentContest = configUpdateCmd.String("current-contest", "", "current contest")
+
+	authBatchCreateCmd  = flag.NewFlagSet("batch-create", flag.ExitOnError)
+	authBatchCreateFile = authBatchCreateCmd.String("i", "", "path to CSV file")
 )
 
 type Services struct {
@@ -56,7 +59,7 @@ type Services struct {
 }
 
 func setupCommonFlags() {
-	for _, fs := range []*flag.FlagSet{contestCreateCmd, contestDataCmd, difficultyCreateCmd, problemCreateCmd, configUpdateCmd} {
+	for _, fs := range []*flag.FlagSet{contestCreateCmd, contestDataCmd, difficultyCreateCmd, problemCreateCmd, configUpdateCmd, authBatchCreateCmd} {
 		fs.StringVar(
 			&configPath,
 			"config",
@@ -329,6 +332,34 @@ func main() {
 				os.Exit(1)
 			}
 			fmt.Println("Config updated successfully.")
+		}
+	case "auth":
+		if len(os.Args) < 3 {
+			fmt.Println("[Error] Expected a subcommand.")
+			os.Exit(1)
+		}
+		switch os.Args[2] {
+		case "batch-create":
+			authBatchCreateCmd.Parse(os.Args[3:])
+
+			if *authBatchCreateFile == "" {
+				fmt.Println("[Error] -i flag is required.")
+				os.Exit(1)
+			}
+
+			content, err := os.ReadFile(*authBatchCreateFile)
+			if err != nil {
+				fmt.Println("[Error] Unable to read file: " + err.Error())
+				os.Exit(1)
+			}
+
+			_, services := parseConfigFile()
+			err = services.authService.BatchRegister(context.Background(), string(content))
+			if err != nil {
+				fmt.Println("[Error] " + err.Error())
+				os.Exit(1)
+			}
+			fmt.Println("Accounts created successfully.")
 		}
 	default:
 		fmt.Println("[Error] Unknown subcommand.")
