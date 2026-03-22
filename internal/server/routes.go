@@ -14,6 +14,10 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("POST /login", s.postLogin)
 	s.mux.HandleFunc("POST /logout", s.postLogout)
 
+	// Activate registerRoutes
+	s.mux.HandleFunc("POST /activate", s.postActivate)
+	s.mux.HandleFunc("GET /activate/{code}", s.getActivate)
+
 	// Register routes
 	// s.mux.HandleFunc("POST /register", s.withAuth(false, s.withAdmin(s.postRegisterAccount)))
 	// s.mux.HandleFunc("POST /register/batch", s.withAuth(false, s.withAdmin(s.postBatchCreateAccounts)))
@@ -26,4 +30,5 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/", s.withAuth(false, s.getProblem))
 	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/img/{img}", s.withAuth(false, s.getProblemImages))
 	s.mux.HandleFunc("POST /contest/{contest_slug}/{problem_slug}/submit/{part}", s.withAuth(false, s.postSubmit))
+	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/input/", s.withAuth(false, s.getInput))
 }

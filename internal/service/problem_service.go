@@ -28,6 +28,7 @@ var (
 	ErrUnableToCreateProblem = errors.New("unable to create problem")
 	ErrPartNotFound          = errors.New("a part has not been found")
 	ErrAlreadySolved         = errors.New("this part has already been solved")
+	ErrInputNotFound         = errors.New("input not found")
 )
 
 type ProblemService struct {
@@ -349,4 +350,19 @@ type GetSolvesInput struct {
 
 func (s *ProblemService) GetSolves(ctx context.Context, input GetSolvesInput) (uint, error) {
 	return s.repo.GetSolvesAmount(ctx, input.UserID, input.ProblemID)
+}
+
+// TODO: maybe change this name (confusing ?)
+type GetProblemInputInput struct {
+	UserID    uint
+	ProblemID uint
+}
+
+// same thing here
+func (s *ProblemService) GetProblemInput(ctx context.Context, input GetProblemInputInput) (string, error) {
+	problemInput, err := s.repo.GetProblemInput(ctx, input.UserID, input.ProblemID)
+	if err != nil {
+		return "", ErrInputNotFound
+	}
+	return problemInput.Input, nil
 }

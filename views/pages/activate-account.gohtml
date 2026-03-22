@@ -1,0 +1,18 @@
+{{ define "heading" }}
+{{ end }}
+{{ define "content" }}
+<main class="flex">
+   <div>
+    <h3>Créer un mot de passe pour activer votre compte</h3>
+    <form method="POST" action="/activate/{{ .Page.ActivationCode }}" class="larger">
+      <div>
+        <label for="password">Choisissez un mot de passe</label>
+        <input type="password" id="password" name="password" />
+      </div>
+      <div class="btns btns--no-marge">
+        <button class="btn" type="submit">Créer le compte</button>
+      </div>
+    </form>
+  </div>
+</main>
+{{ end }}

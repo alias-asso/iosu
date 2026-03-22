@@ -128,3 +128,38 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func (s *Server) getInput(w http.ResponseWriter, r *http.Request) {
+	contestSlug := r.PathValue("contest_slug")
+	problemSlug := r.PathValue("problem_slug")
+
+	ctx := r.Context()
+	claims := ctx.Value("claims").(*service.Claims)
+
+	getProblemInput := service.GetProblemInput{
+		Slug: problemSlug,
+	}
+	problem, err := s.problemService.GetProblem(ctx, getProblemInput)
+	if err != nil {
+		http.Error(w, "this problem does not exist", http.StatusBadRequest)
+		return
+	}
+
+	if problem.Contest.Slug != contestSlug {
+		http.Error(w, "this problem is not part of this contest", http.StatusBadRequest)
+		return
+	}
+
+	input := service.GetProblemInputInput{
+		UserID:    claims.UserID,
+		ProblemID: problem.ID,
+	}
+
+	value, err := s.problemService.GetProblemInput(ctx, input)
+	if err != nil {
+		http.Error(w, "unable to get input", http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(value))
+}

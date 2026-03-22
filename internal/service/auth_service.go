@@ -33,19 +33,21 @@ func NewAuthService(repo repository.UserRepository, jwtSecret string, defaultAdm
 }
 
 var (
-	ErrUsernameTooLong    = errors.New("username too long")
-	ErrUsernameRequired   = errors.New("username required")
-	ErrPasswordTooLong    = errors.New("password too long")
-	ErrPasswordRequired   = errors.New("password required")
-	ErrNonExistantAccount = errors.New("no account is associated with this username")
-	ErrWrongPassword      = errors.New("wrong password")
-	ErrInvalidEmail       = errors.New("invalid email")
-	ErrUserAlreadyExist   = errors.New("this user already exist")
-	ErrInvalidCSV         = errors.New("invalid csv file")
-	ErrInvalidCSVHeader   = errors.New("invalid csv header")
-	ErrInvalidInput       = errors.New("invalid input")
-	ErrUserNotFound       = errors.New("user not found")
-	ErrInternalError      = errors.New("internal error")
+	ErrUsernameTooLong       = errors.New("username too long")
+	ErrUsernameRequired      = errors.New("username required")
+	ErrPasswordTooLong       = errors.New("password too long")
+	ErrPasswordRequired      = errors.New("password required")
+	ErrNonExistantAccount    = errors.New("no account is associated with this username")
+	ErrWrongPassword         = errors.New("wrong password")
+	ErrInvalidEmail          = errors.New("invalid email")
+	ErrUserAlreadyExist      = errors.New("this user already exist")
+	ErrInvalidCSV            = errors.New("invalid csv file")
+	ErrInvalidCSVHeader      = errors.New("invalid csv header")
+	ErrInvalidInput          = errors.New("invalid input")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrInternalError         = errors.New("internal error")
+	ErrInvalidActivationCode = errors.New("activation code is invalid")
+	ErrActivationCodeExpired = errors.New("activation code has expired")
 )
 
 type Claims struct {
@@ -264,4 +266,51 @@ func (s *AuthService) GetUser(ctx context.Context, input GetUserInput) (database
 		return database.User{}, ErrUserNotFound
 	}
 	return user, nil
+}
+
+type ActivateInput struct {
+	ActivationCode string
+	Password       string
+}
+
+func (s *AuthService) Activate(ctx context.Context, input ActivateInput) error {
+	if len(input.ActivationCode) > 32 {
+		return ErrInvalidActivationCode
+	}
+	activationCode, err := s.repo.GetActivationCode(ctx, input.ActivationCode)
+	if err != nil {
+		return ErrInvalidActivationCode
+	}
+	now := time.Now()
+	if now.After(activationCode.Expiration) {
+		return ErrActivationCodeExpired
+	}
+	user := activationCode.User
+	encryptedPassword, err := encryptPassword(input.Password)
+	if err != nil {
+		return ErrInternalError
+	}
+	user.Password = encryptedPassword
+	user.Activated = true
+	return s.repo.UpdateByUsername(ctx, user)
+}
+
+type GetActivationCodeInput struct {
+	ActivationCode string
+}
+
+func (s *AuthService) GetActivationCode(ctx context.Context, input GetActivationCodeInput) (database.ActivationCode, error) {
+	if len(input.ActivationCode) > 32 {
+		return database.ActivationCode{}, ErrInvalidActivationCode
+	}
+	activationCode, err := s.repo.GetActivationCode(ctx, input.ActivationCode)
+	if err != nil {
+		return database.ActivationCode{}, ErrInvalidActivationCode
+	}
+	now := time.Now()
+	if now.After(activationCode.Expiration) {
+		return database.ActivationCode{}, ErrActivationCodeExpired
+	}
+
+	return activationCode, nil
 }
