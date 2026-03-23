@@ -314,3 +314,11 @@ func (s *AuthService) GetActivationCode(ctx context.Context, input GetActivation
 
 	return activationCode, nil
 }
+
+func (s *AuthService) GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error) {
+	activationCodes, err := s.repo.GetActivationCodes(ctx)
+	if err != nil {
+		return []database.ActivationCode{}, ErrInternalError
+	}
+	return activationCodes, nil
+}

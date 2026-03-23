@@ -15,6 +15,7 @@ type UserRepository interface {
 	GetByUsername(ctx context.Context, username string) (database.User, error)
 	CreateUserWithActivation(ctx context.Context, user *database.User, activation *database.ActivationCode) error
 	GetActivationCode(ctx context.Context, code string) (database.ActivationCode, error)
+	GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error)
 }
 
 type GormUserRepository struct {
@@ -76,4 +77,12 @@ func (r *GormUserRepository) CreateUserWithActivation(
 
 func (r *GormUserRepository) GetActivationCode(ctx context.Context, code string) (database.ActivationCode, error) {
 	return gorm.G[database.ActivationCode](r.db).Preload("User", nil).Where("code = ?", code).First(ctx)
+}
+
+func (r *GormUserRepository) GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error) {
+	return gorm.G[database.ActivationCode](r.db).
+		Joins(clause.InnerJoin.Association("User"), nil).
+		Where("users.activated = ?", true).
+		Preload("User", nil).
+		Find(ctx)
 }

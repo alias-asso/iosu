@@ -293,7 +293,13 @@ func TestGetProblemPartsHtml(t *testing.T) {
 				}
 				return database.Solve{Parts: tt.solvedParts}, nil
 			},
-		}
+
+			getSolvesAmountFn: func(ctx context.Context, userID uint, problemID uint) (uint, error) {
+				if tt.userErr != nil {
+					return 0, tt.userErr
+				}
+				return tt.solvedParts, nil
+			}}
 
 		contestRepo := &mockContestRepo{
 			createFn: func(ctx context.Context, contest *database.Contest) error {
