@@ -88,6 +88,8 @@ type Config struct {
 	MainText       string
 	SecondaryText  string
 	CurrentContest string
+	HelpCOntent    string
+	RulesContent   string
 }
 
 func Migrate(db *gorm.DB) error {
