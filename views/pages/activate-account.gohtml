@@ -4,7 +4,8 @@
 <main class="flex">
    <div>
     <h3>Créer un mot de passe pour activer votre compte</h3>
-    <form method="POST" action="/activate/{{ .Page.ActivationCode }}" class="larger">
+    <form method="POST" action="/activate" class="larger">
+      <input type="hidden"  name="activation-code" value="{{ .Page.ActivationCode }}"/>
       <div>
         <label for="password">Choisissez un mot de passe</label>
         <input type="password" id="password" name="password" />
