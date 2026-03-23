@@ -366,3 +366,41 @@ func (s *ProblemService) GetProblemInput(ctx context.Context, input GetProblemIn
 	}
 	return problemInput.Input, nil
 }
+
+type UpdateProblemInput struct {
+	ID               uint
+	Slug             *string
+	Name             *string
+	Author           *string
+	PointsMultiplier *float64
+	PointsAdder      *uint
+	Parts            *uint
+}
+
+func (s *ProblemService) UpdateProblem(
+	ctx context.Context,
+	input UpdateProblemInput,
+) error {
+	update := database.Problem{}
+
+	if input.Name != nil {
+		update.Name = *input.Name
+	}
+	if input.Slug != nil {
+		update.Slug = *input.Slug
+	}
+	if input.Author != nil {
+		update.Author = *input.Author
+	}
+	if input.PointsMultiplier != nil {
+		update.PointsMultiplier = *input.PointsMultiplier
+	}
+	if input.PointsAdder != nil {
+		update.PointsAdder = *input.PointsAdder
+	}
+	if input.Parts != nil {
+		update.Parts = *input.Parts
+	}
+
+	return s.repo.Update(ctx, input.ID, update)
+}
