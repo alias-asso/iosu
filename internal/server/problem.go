@@ -115,13 +115,25 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 	type Data struct {
 		Error   string
 		Success bool
+		MaxPart bool
 	}
 	if ok {
-		s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: "", Success: true})
+		gpInput := service.GetProblemInput{
+			Slug: problemSlug,
+		}
+		problem, err := s.problemService.GetProblem(ctx, gpInput)
+		if err != nil {
+			s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: err.Error(), Success: false, MaxPart: false})
+		}
+		if problem.Parts == uint(part) {
+			s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: "", Success: true, MaxPart: true})
+			return
+		}
+		s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: "", Success: true, MaxPart: false})
 		return
 	} else {
 		if err != nil {
-			s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: err.Error(), Success: false})
+			s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: err.Error(), Success: false, MaxPart: false})
 			return
 		}
 		s.renderPartial(w, ctx, "partials/response-indicator.gohtml", Data{Error: "", Success: false})
