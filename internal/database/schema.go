@@ -26,9 +26,11 @@ type ActivationCode struct {
 
 type Contest struct {
 	gorm.Model
-	Name      string
-	StartTime time.Time
-	EndTime   time.Time
+	Name        string
+	Slug        string
+	Description string
+	StartTime   time.Time
+	EndTime     time.Time
 }
 
 type Difficulty struct {
@@ -41,6 +43,7 @@ type Problem struct {
 	gorm.Model
 	Name             string
 	Slug             string
+	Author           string
 	PointsMultiplier float64 `gorm:"default:1.0"`
 	PointsAdder      uint    `gorm:"default:0"`
 	Parts            uint    `gorm:"default:1"`
@@ -52,20 +55,20 @@ type Problem struct {
 
 type ProblemInput struct {
 	gorm.Model
-	UserID    uint
+	UserID    uint `gorm:"uniqueIndex:idx_user_problem_input"`
 	User      User
-	ProblemID uint
+	ProblemID uint `gorm:"uniqueIndex:idx_user_problem_input"`
 	Problem   Problem
 	Input     string
 }
 
 type ProblemOutput struct {
 	gorm.Model
-	UserID    uint
+	UserID    uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	User      User
-	ProblemID uint
+	ProblemID uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	Problem   Problem
-	Part      uint
+	Part      uint `gorm:"uniqueIndex:idx_user_problem_output"`
 	Output    string
 }
 
@@ -78,8 +81,28 @@ type Solve struct {
 	Parts     uint
 }
 
+type Config struct {
+	gorm.Model
+	Singleton      int `gorm:"uniqueIndex"`
+	SiteTitle      string
+	MainText       string
+	SecondaryText  string
+	CurrentContest string
+	HelpContent    string
+	RulesContent   string
+}
+
 func Migrate(db *gorm.DB) error {
-	err := db.AutoMigrate(&User{}, &ActivationCode{}, &Contest{}, &Difficulty{}, &Problem{})
+	err := db.AutoMigrate(
+		&User{},
+		&ActivationCode{},
+		&Contest{},
+		&Difficulty{},
+		&Problem{},
+		&ProblemInput{},
+		&ProblemOutput{},
+		&Solve{},
+		&Config{})
 	if err != nil {
 		return err
 	}

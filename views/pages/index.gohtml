@@ -1,0 +1,23 @@
+{{ define "heading" }}
+<div class="content grid">
+  <div>
+    <h2>Compétition de programmation</h2>
+    <p>
+      {{ .Config.MainText }}
+    </p>
+  </div>
+  <img src="https://placehold.co/800x400" alt="Placeholder" />
+</div>
+{{ end }}
+{{ define "content" }}
+
+<main>
+  <h3>Comment s'inscrire ?</h3>
+    {{ .Config.SecondaryText }}
+  <div class="btns btns--center">
+    <a href="" class="btn">S'inscrire</a>
+    <a href="/login" class="btn">Se connecter</a>
+    <a href="/contest/{{ .Config.CurrentContest }}" class="btn">Accéder au concours</a>
+  </div>
+</main>
+{{ end }}

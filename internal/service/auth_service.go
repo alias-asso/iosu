@@ -33,18 +33,21 @@ func NewAuthService(repo repository.UserRepository, jwtSecret string, defaultAdm
 }
 
 var (
-	ErrUsernameTooLong    = errors.New("username too long")
-	ErrUsernameRequired   = errors.New("username required")
-	ErrPasswordTooLong    = errors.New("password too long")
-	ErrPasswordRequired   = errors.New("password required")
-	ErrNonExistantAccount = errors.New("no account is associated with this username")
-	ErrWrongPassword      = errors.New("wrong password")
-	ErrInvalidEmail       = errors.New("invalid email")
-	ErrUserAlreadyExist   = errors.New("this user already exist")
-	ErrInvalidCSV         = errors.New("invalid csv file")
-	ErrInvalidCSVHeader   = errors.New("invalid csv header")
-	ErrInvalidInput       = errors.New("invalid input")
-	ErrUserNotFound       = errors.New("user not found")
+	ErrUsernameTooLong       = errors.New("username too long")
+	ErrUsernameRequired      = errors.New("username required")
+	ErrPasswordTooLong       = errors.New("password too long")
+	ErrPasswordRequired      = errors.New("password required")
+	ErrNonExistantAccount    = errors.New("no account is associated with this username")
+	ErrWrongPassword         = errors.New("wrong password")
+	ErrInvalidEmail          = errors.New("invalid email")
+	ErrUserAlreadyExist      = errors.New("this user already exist")
+	ErrInvalidCSV            = errors.New("invalid csv file")
+	ErrInvalidCSVHeader      = errors.New("invalid csv header")
+	ErrInvalidInput          = errors.New("invalid input")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrInternalError         = errors.New("internal error")
+	ErrInvalidActivationCode = errors.New("activation code is invalid")
+	ErrActivationCodeExpired = errors.New("activation code has expired")
 )
 
 type Claims struct {
@@ -55,7 +58,7 @@ type Claims struct {
 }
 
 func generateJWT(userID uint, username string, admin bool, jwtSecret string) (string, error) {
-	expirationTime := time.Now().Add(5 * time.Minute)
+	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
@@ -251,4 +254,71 @@ func (s *AuthService) BatchRegister(ctx context.Context, csvContent string) erro
 	}
 
 	return nil
+}
+
+type GetUserInput struct {
+	Username string
+}
+
+func (s *AuthService) GetUser(ctx context.Context, input GetUserInput) (database.User, error) {
+	user, err := s.repo.GetByUsername(ctx, input.Username)
+	if err != nil {
+		return database.User{}, ErrUserNotFound
+	}
+	return user, nil
+}
+
+type ActivateInput struct {
+	ActivationCode string
+	Password       string
+}
+
+func (s *AuthService) Activate(ctx context.Context, input ActivateInput) error {
+	if len(input.ActivationCode) > 32 {
+		return ErrInvalidActivationCode
+	}
+	activationCode, err := s.repo.GetActivationCode(ctx, input.ActivationCode)
+	if err != nil {
+		return ErrInvalidActivationCode
+	}
+	now := time.Now()
+	if now.After(activationCode.Expiration) {
+		return ErrActivationCodeExpired
+	}
+	user := activationCode.User
+	encryptedPassword, err := encryptPassword(input.Password)
+	if err != nil {
+		return ErrInternalError
+	}
+	user.Password = encryptedPassword
+	user.Activated = true
+	return s.repo.UpdateByUsername(ctx, user)
+}
+
+type GetActivationCodeInput struct {
+	ActivationCode string
+}
+
+func (s *AuthService) GetActivationCode(ctx context.Context, input GetActivationCodeInput) (database.ActivationCode, error) {
+	if len(input.ActivationCode) > 32 {
+		return database.ActivationCode{}, ErrInvalidActivationCode
+	}
+	activationCode, err := s.repo.GetActivationCode(ctx, input.ActivationCode)
+	if err != nil {
+		return database.ActivationCode{}, ErrInvalidActivationCode
+	}
+	now := time.Now()
+	if now.After(activationCode.Expiration) {
+		return database.ActivationCode{}, ErrActivationCodeExpired
+	}
+
+	return activationCode, nil
+}
+
+func (s *AuthService) GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error) {
+	activationCodes, err := s.repo.GetActivationCodes(ctx)
+	if err != nil {
+		return []database.ActivationCode{}, ErrInternalError
+	}
+	return activationCodes, nil
 }

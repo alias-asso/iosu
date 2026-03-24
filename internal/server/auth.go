@@ -33,18 +33,10 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		MaxAge:   int(time.Hour * 4),
+		MaxAge:   int(time.Hour * 24),
 	})
 
-	// w.Header().Set("HX-Redirect", "/admin")
-	// w.WriteHeader(http.StatusOK)
-	// TODO: replace with ok template
-	w.Write([]byte("logged in"))
-}
-
-// route handler
-func (s *Server) postRegisterAccount(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // route handler
@@ -77,4 +69,64 @@ func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request)
 
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("ok"))
+}
+
+func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r.Context(), "pages/login.gohtml", nil)
+}
+
+func (s *Server) postLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:   "token",
+		Value:  "",
+		Path:   "/",
+		MaxAge: -1,
+	})
+	w.Header().Set("HX-Redirect", "/")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) getActivate(w http.ResponseWriter, r *http.Request) {
+	code := r.PathValue("code")
+
+	if len(code) != 32 {
+		s.render(w, r.Context(), "pages/error.gohtml", "Invalid or expired activation code.")
+		return
+	}
+
+	input := service.GetActivationCodeInput{
+		ActivationCode: code,
+	}
+
+	ac, err := s.authService.GetActivationCode(r.Context(), input)
+	if err != nil {
+		s.render(w, r.Context(), "pages/error.gohtml", "Invalid or expired activation code.")
+		return
+	}
+	s.render(w, r.Context(), "pages/activate-account.gohtml", struct {
+		ActivationCode string
+	}{
+		ActivationCode: ac.Code})
+}
+
+func (s *Server) postActivate(w http.ResponseWriter, r *http.Request) {
+	code := r.FormValue("activation-code")
+	password := r.FormValue("password")
+
+	if len(code) != 32 {
+		http.Error(w, "Invalid or expired activation code", http.StatusBadRequest)
+		return
+	}
+
+	input := service.ActivateInput{
+		ActivationCode: code,
+		Password:       password,
+	}
+
+	err := s.authService.Activate(r.Context(), input)
+	if err != nil && errors.Is(err, service.ErrActivationCodeExpired) {
+		http.Error(w, "Invalid ore expired activation code", http.StatusBadRequest)
+		return
+	}
+	http.Redirect(w, r, "/login", http.StatusFound)
 }

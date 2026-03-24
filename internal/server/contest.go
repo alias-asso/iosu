@@ -106,3 +106,22 @@ func (s *Server) patchUpdateContest(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
+	contestSlug := r.PathValue("slug")
+	getProblemsInput := service.GetProblemsInput{
+		ContestSlug: contestSlug,
+	}
+	problems, err := s.problemService.GetProblems(r.Context(), getProblemsInput)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrContestNotFound):
+			s.render(w, r.Context(), "pages/error.gohtml", err.Error())
+			return
+		default:
+			s.render(w, r.Context(), "pages/error.gohtml", "internal server error")
+			return
+		}
+	}
+	s.render(w, r.Context(), "pages/contest.gohtml", problems)
+}

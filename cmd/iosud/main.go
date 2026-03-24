@@ -43,12 +43,17 @@ func main() {
 
 	contestRepo := repository.NewGormContestRepository(db)
 	userRepo := repository.NewGormUserRepository(db)
+	problemRepo := repository.NewGormProblemRepository(db)
+	configRepo := repository.NewGormConfigRepository(db)
 
 	contestService := service.NewConstestService(contestRepo, config.DataDirectory)
 	authService := service.NewAuthService(userRepo, config.JwtKey, config.DefaultAdminPassword)
+	problemService := service.NewProblemService(problemRepo, &contestService, &authService, config.DataDirectory)
+	configService := service.NewConfigService(configRepo)
 
 	mux := http.NewServeMux()
-	server := server.NewServer(&contestService, &authService, mux, config)
+	server := server.NewServer(&contestService, &authService, &problemService, &configService, mux, config)
+	server.SetupServer(config)
 
 	err = database.Migrate(db)
 	if err != nil {
@@ -56,6 +61,7 @@ func main() {
 	}
 
 	authService.CreateDefaultAdmin(context.Background())
+	configService.CreateDefaultConfig(context.Background())
 
 	server.Start(config.ServerPort)
 }

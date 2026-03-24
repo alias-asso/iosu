@@ -55,9 +55,9 @@ func (r *GormContestRepository) Update(
 }
 
 func (r *GormContestRepository) GetByName(ctx context.Context, name string) (database.Contest, error) {
-	return gorm.G[database.Contest](r.db).Select("name = ?", name).First(ctx)
+	return gorm.G[database.Contest](r.db).Where("name = ?", name).First(ctx)
 }
 
 func (r *GormContestRepository) Get(ctx context.Context, id uint) (database.Contest, error) {
-	return gorm.G[database.Contest](r.db).Select("id = ?", id).First(ctx)
+	return gorm.G[database.Contest](r.db).Where("id = ?", id).First(ctx)
 }

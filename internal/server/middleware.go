@@ -8,11 +8,16 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
+func (s *Server) withAuth(giveAccess bool, next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			if giveAccess {
+				ctx := context.WithValue(r.Context(), "logged_in", false)
+				next(w, r.WithContext(ctx))
+				return
+			}
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		token, err := jwt.ParseWithClaims(cookie.Value, &service.Claims{}, func(token *jwt.Token) (any, error) {
@@ -20,6 +25,11 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if err != nil || !token.Valid {
+			if giveAccess {
+				ctx := context.WithValue(r.Context(), "logged_in", false)
+				next(w, r.WithContext(ctx))
+				return
+			}
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
@@ -30,7 +40,8 @@ func (s *Server) withAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "claims", &claims)
+		ctx := context.WithValue(r.Context(), "claims", claims)
+		ctx = context.WithValue(ctx, "logged_in", true)
 		next(w, r.WithContext(ctx))
 	}
 }

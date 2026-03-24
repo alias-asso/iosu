@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/alias-asso/iosu/internal/config"
+	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/service"
 )
 
@@ -21,17 +23,30 @@ type contestService interface {
 	UpdateContest(ctx context.Context, input service.UpdateContestInput) error
 }
 
+type problemService interface {
+	GetProblemPartsHtml(ctx context.Context, input service.GetProblemPartHtmlInput) ([]template.HTML, error)
+	CreateProblemData(ctx context.Context, input service.CreateProblemDataInput) error
+	Submit(ctx context.Context, input service.SubmitInput) (bool, error)
+	GetProblems(ctx context.Context, input service.GetProblemsInput) ([]database.Problem, error)
+	CreateDifficulty(ctx context.Context, input service.CreateDifficultyInput) error
+	GetProblem(ctx context.Context, input service.GetProblemInput) (database.Problem, error)
+}
+
 type Server struct {
-	contestService contestService
-	authService    authService
+	contestService *service.ContestService
+	authService    *service.AuthService
+	problemService *service.ProblemService
+	configService  *service.ConfigService
 	mux            *http.ServeMux
 	cfg            *config.Config
 }
 
-func NewServer(contestService *service.ContestService, authService *service.AuthService, mux *http.ServeMux, cfg *config.Config) *Server {
+func NewServer(contestService *service.ContestService, authService *service.AuthService, problemService *service.ProblemService, configService *service.ConfigService, mux *http.ServeMux, cfg *config.Config) *Server {
 	return &Server{
 		contestService: contestService,
 		authService:    authService,
+		problemService: problemService,
+		configService:  configService,
 		mux:            mux,
 		cfg:            cfg,
 	}
@@ -52,14 +67,14 @@ func NewServer(contestService *service.ContestService, authService *service.Auth
 // 	}, nil
 // }
 
-func (s *Server) SetupServer(config config.Config) error {
+func (s *Server) SetupServer(config *config.Config) error {
 	registerRoutes(s)
-
+	log.Println("Registered routes.")
 	return nil
 }
 
 func (s *Server) Start(port string) {
-	log.Printf("Listening on %s:%s", "localhost", port)
+	log.Printf("Listening on http://%s:%s", "localhost", port)
 	err := http.ListenAndServe(":"+port, s.mux)
 	if err != nil {
 		log.Panicf("Error launching server : %s\n", err)

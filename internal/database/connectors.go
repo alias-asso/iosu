@@ -6,10 +6,15 @@ import (
 	"github.com/alias-asso/iosu/internal/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-func ConnectSqlite(path string) (error, *gorm.DB) {
-	db, err := gorm.Open(sqlite.Open(path), &gorm.Config{})
+func ConnectSqlite(path string, config *config.Config) (error, *gorm.DB) {
+	var gormConfig *gorm.Config = &gorm.Config{}
+	if !config.DevMode {
+		gormConfig.Logger.LogMode(logger.Silent)
+	}
+	db, err := gorm.Open(sqlite.Open(path), gormConfig)
 	if err != nil {
 		return err, &gorm.DB{}
 	}
@@ -20,7 +25,7 @@ func ConnectDb(config *config.Config) (error, *gorm.DB) {
 	var db *gorm.DB
 	switch config.DbType {
 	case "sqlite":
-		err, conn := ConnectSqlite(config.Sqlite.DbPath)
+		err, conn := ConnectSqlite(config.Sqlite.DbPath, config)
 		if err != nil {
 			return err, &gorm.DB{}
 		}

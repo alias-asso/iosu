@@ -1,0 +1,21 @@
+{{ define "header" }}
+<header>
+  <nav>
+    <input type="checkbox" id="toggle-navbar" />
+    <h1><a href="/">{{ .Config.SiteTitle }}</a></h1>
+    <label for="toggle-navbar" class="navbar__toggle">☰</label>
+    <ul class="navbar__links">
+      <li><a href="/">Accueil</a></li>
+      <li><a href="/help">Aide</a></li>
+      <li><a href="/rules">Règles</a></li>
+      <li><a href="/contest/{{ .Config.CurrentContest }}">Problèmes</a></li>
+      {{ if .LoggedIn }}
+      <li><a href="#" hx-post="/logout">Déconnexion</a></li>
+      {{ else }}
+      <li><a href="/login">Connexion</a></li>
+      {{ end }}
+    </ul>
+  </nav>
+  {{ template "heading" . }}
+</header>
+{{ end }}

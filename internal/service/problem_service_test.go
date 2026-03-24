@@ -28,9 +28,11 @@ type mockProblemRepo struct {
 	getProblemInputFn  func(ctx context.Context, userID uint, problemID uint) (database.ProblemInput, error)
 	getProblemOutputFn func(ctx context.Context, userID uint, problemID uint, part uint) (database.ProblemOutput, error)
 
-	createSolveFn func(ctx context.Context, solve database.Solve) error
-	updateSolveFn func(ctx context.Context, solveID uint, solve database.Solve) error
-	getSolveFn    func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
+	createSolveFn     func(ctx context.Context, solve database.Solve) error
+	updateSolveFn     func(ctx context.Context, solveID uint, solve database.Solve) error
+	getSolveFn        func(ctx context.Context, userID uint, problemID uint) (database.Solve, error)
+	getSolvesAmountFn func(ctx context.Context, userID uint, problemID uint) (uint, error)
+	getAllFn          func(ctx context.Context, contestID uint) ([]database.Problem, error)
 }
 
 func (m *mockProblemRepo) Create(ctx context.Context, problem *database.Problem) error {
@@ -79,6 +81,14 @@ func (m *mockProblemRepo) UpdateSolve(ctx context.Context, solveID uint, solve d
 }
 func (m *mockProblemRepo) GetSolve(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
 	return m.getSolveFn(ctx, userID, problemID)
+}
+
+func (m *mockProblemRepo) GetSolvesAmount(ctx context.Context, userID uint, problemID uint) (uint, error) {
+	return m.getSolvesAmountFn(ctx, userID, problemID)
+}
+
+func (m *mockProblemRepo) GetAll(ctx context.Context, contestID uint) ([]database.Problem, error) {
+	return m.getAllFn(ctx, contestID)
 }
 
 // writePartFiles creates part1.md ... partN.md under dataDir/slug/
@@ -182,8 +192,11 @@ func TestCreateProblemService(t *testing.T) {
 			},
 		}
 
+		authRepo := &mockUserRepo{}
+
+		authService := NewAuthService(authRepo, "", "")
 		contestService := NewConstestService(contestRepo, dataDir)
-		service := NewProblemService(problemRepo, &contestService)
+		service := NewProblemService(problemRepo, &contestService, &authService, dataDir)
 
 		err := service.CreateProblem(context.Background(), tt.input)
 
@@ -252,6 +265,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 	for _, tt := range tests {
 
 		dataDir := t.TempDir()
+		defer os.RemoveAll(dataDir)
 
 		if !tt.wantErr {
 			writePartFiles(t, dataDir, tt.slug, int(tt.totalParts))
@@ -279,7 +293,13 @@ func TestGetProblemPartsHtml(t *testing.T) {
 				}
 				return database.Solve{Parts: tt.solvedParts}, nil
 			},
-		}
+
+			getSolvesAmountFn: func(ctx context.Context, userID uint, problemID uint) (uint, error) {
+				if tt.userErr != nil {
+					return 0, tt.userErr
+				}
+				return tt.solvedParts, nil
+			}}
 
 		contestRepo := &mockContestRepo{
 			createFn: func(ctx context.Context, contest *database.Contest) error {
@@ -290,7 +310,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 		contestService := NewConstestService(contestRepo, dataDir)
 		authService := NewAuthService(userRepo, "secret", "adminpass")
 
-		service := NewProblemService(problemRepo, &contestService)
+		service := NewProblemService(problemRepo, &contestService, &authService, dataDir)
 		service.authService = &authService
 
 		result, err := service.GetProblemPartsHtml(context.Background(), GetProblemPartHtmlInput{
@@ -307,6 +327,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 		}
 
 		if !tt.wantErr && len(result) != tt.wantPartCount {
+			fmt.Printf("%v\n", result)
 			t.Fatalf("[%s] expected %d parts, got %d", tt.name, tt.wantPartCount, len(result))
 		}
 
@@ -315,5 +336,6 @@ func TestGetProblemPartsHtml(t *testing.T) {
 				t.Fatalf("[%s] part %d html is empty", tt.name, i+1)
 			}
 		}
+
 	}
 }

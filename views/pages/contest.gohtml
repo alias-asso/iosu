@@ -1,0 +1,107 @@
+{{ define "heading" }}
+<div class="content">
+  <h2>Problèmes</h2>
+  <p>
+    Les différents problèmes de la compétition sont listés ici. Vous pouvez y participer dans l'ordre que vous voulez.
+  </p>
+  <div class="btns">
+    <a href="/help" class="btn">Fonctionnement</a>
+  </div>
+</div>
+{{ end }}
+{{ define "content" }}
+<main class="larger">
+  <!-- <h2>Problèmes commencés</h2> -->
+  <!-- <article class="article__container grid"> -->
+  <!-- <article> -->
+  <!-- <h3>Lorem ipsum dolor sit amet</h3> -->
+  <!-- <p class="subtitle">pour tout le monde</p> -->
+  <!-- <p> -->
+  <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut quae, consequatur, mollitia eos magnam dolor -->
+  <!-- neque numquam ratione praesentium odio distinctio illum animi. Tempore nobis laborum autem necessitatibus -->
+  <!-- iure nesciunt? -->
+  <!-- </p> -->
+  <!-- <div class="btns"> -->
+  <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+  <!-- </div> -->
+  <!-- </article> -->
+  <!-- </article> -->
+  <article class="article__container grid">
+    {{ range $problem := .Page }}
+    <article>
+      <h3>{{ $problem.Name }}</h3>
+      <p class="subtitle">Par {{ $problem.Author }}</p>
+      <p class="subtitle">Difficulté : {{ $problem.Difficulty.Name }}</p>
+      <div class="btns">
+        <a href="/contest/{{ $problem.Contest.Name }}/{{ $problem.Slug }}" class="btn">Voir le problème</a>
+      </div>
+    </article>
+    {{ end }}
+    <!-- <article> -->
+    <!-- <h3>Création d'un langage de programmation simple</h3> -->
+    <!-- <p class="subtitle">pour des L3 / master</p> -->
+    <!-- <p> -->
+    <!-- Dans votre ville, de plus en plus de personnes prennent les transports en commun pour réduire leur emprunte -->
+    <!-- carbonne. Son metro, qui commence à vieillir, ne peut pas supporter une telle augmentation. Pour solutionner -->
+    <!-- ce problème, votre ville a décidé de le moderniser en l'automatisant. Cela permettra d'avoir des horaires -->
+    <!-- plus fiables tout en demandant moins de personnels (qui pourront alors être réaffecté sur d'autres -->
+    <!-- missions). -->
+    <!-- </p> -->
+    <!-- <div class="btns"> -->
+    <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+    <!-- </div> -->
+    <!-- </article> -->
+    <!-- <article> -->
+    <!-- <h3>Lorem ipsum dolor sit amet</h3> -->
+    <!-- <p class="subtitle">pour tout le monde</p> -->
+    <!-- <p> -->
+    <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut quae, consequatur, mollitia eos magnam dolor -->
+    <!-- neque numquam ratione praesentium odio distinctio illum animi. Tempore nobis laborum autem necessitatibus -->
+    <!-- iure nesciunt? -->
+    <!-- </p> -->
+    <!-- <div class="btns"> -->
+    <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+    <!-- </div> -->
+    <!-- </article> -->
+    <!-- <article> -->
+    <!-- <h3>Lorem ipsum dolor sit amet</h3> -->
+    <!-- <p class="subtitle">pour des master</p> -->
+    <!-- <p> -->
+    <!-- Lorem ipsum dolor sit amet consectetur adipisicing elit. Sapiente repudiandae necessitatibus qui minus -->
+    <!-- molestiae nisi illo deleniti natus? Placeat iure voluptate id animi et perferendis beatae iste dolor ratione -->
+    <!-- ea. -->
+    <!-- </p> -->
+    <!-- <div class="btns"> -->
+    <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+    <!-- </div> -->
+    <!-- </article> -->
+    <!-- <article> -->
+    <!-- <h3>Lorem ipsum dolor sit amet</h3> -->
+    <!-- <p class="subtitle">pour tout le monde</p> -->
+    <!-- <p> -->
+    <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut quae, consequatur, mollitia eos magnam dolor -->
+    <!-- neque numquam ratione praesentium odio distinctio illum animi. Tempore nobis laborum autem necessitatibus -->
+    <!-- iure nesciunt? -->
+    <!-- </p> -->
+    <!-- <div class="btns"> -->
+    <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+    <!-- </div> -->
+    <!-- </article> -->
+  </article>
+  <!-- <h2>Problèmes finis</h2> -->
+  <!-- <article class="article__container grid"> -->
+  <!-- <article> -->
+  <!-- <h3>Lorem ipsum dolor sit amet</h3> -->
+  <!-- <p class="subtitle">pour tout le monde</p> -->
+  <!-- <p> -->
+  <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aut quae, consequatur, mollitia eos magnam dolor -->
+  <!-- neque numquam ratione praesentium odio distinctio illum animi. Tempore nobis laborum autem necessitatibus -->
+  <!-- iure nesciunt? -->
+  <!-- </p> -->
+  <!-- <div class="btns"> -->
+  <!-- <a href="/problem.html" class="btn">En savoir plus</a> -->
+  <!-- </div> -->
+  <!-- </article> -->
+  <!-- </article> -->
+</main>
+{{ end }}

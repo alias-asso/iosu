@@ -1,0 +1,32 @@
+{{ define "heading" }}
+
+<div class="content">
+  <h2>{{ .Page.Problem.Name }}</h2>
+  <p class="subtitle">Par {{ .Page.Problem.Author }}</p>
+  <p class="subtitle">Difficulté : {{ .Page.Problem.Difficulty.Name }}</p>
+  <div class="btns">
+    <a href="./input/" class="btn">Votre input</a>
+  </div>
+</div>
+{{ end }}
+{{ define "content" }}
+<main>
+  {{ range $part := .Page.Content }}
+  {{ $part }}
+  {{ end }}
+
+  {{ if eq .Page.SolvedParts .Page.Problem.Parts }}
+  <p>Vous avez déjà résolu ce problème.</p>
+  {{ else }}
+  <br />
+  <p>Vous pouvez récupérer votre input en cliquant <a href="./input/">ici</a>.</p>
+
+  <div class="response-target"></div>
+  <p>Votre réponse :</p>
+  <form hx-post="./submit/{{ len .Page.Content }}" hx-target=".response-target" hx-swap="innerHTML">
+    <input type="text" placeholder="123..." name="response" />
+    <button type="submit" class="btn">Vérifier</button>
+  </form>
+  {{ end }}
+</main>
+{{ end }}
