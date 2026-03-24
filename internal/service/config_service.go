@@ -24,6 +24,8 @@ func (s *ConfigService) CreateDefaultConfig(ctx context.Context) {
 		SiteTitle:     "title",
 		MainText:      "example main text",
 		SecondaryText: "example secondary text",
+		HelpContent:   "default *help* content (markdown rendered)",
+		RulesContent:  "default *rules* content (markdown rendered)",
 	}
 	ok, err := s.repo.CreateIfNotExist(ctx, config)
 	if err != nil {
@@ -40,6 +42,8 @@ type UpdateConfigInput struct {
 	MainText       *string
 	SecondaryText  *string
 	CurrentContest *string
+	HelpContent    *string
+	RulesContent   *string
 }
 
 func (s *ConfigService) UpdateConfig(ctx context.Context, input UpdateConfigInput) error {
@@ -60,6 +64,14 @@ func (s *ConfigService) UpdateConfig(ctx context.Context, input UpdateConfigInpu
 
 	if input.CurrentContest != nil {
 		update.CurrentContest = *input.CurrentContest
+	}
+
+	if input.HelpContent != nil {
+		update.HelpContent = *input.HelpContent
+	}
+
+	if input.RulesContent != nil {
+		update.RulesContent = *input.RulesContent
 	}
 
 	return s.repo.Update(ctx, update)

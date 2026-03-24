@@ -31,4 +31,8 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/img/{img}", s.withAuth(false, s.getProblemImages))
 	s.mux.HandleFunc("POST /contest/{contest_slug}/{problem_slug}/submit/{part}", s.withAuth(false, s.postSubmit))
 	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/input/", s.withAuth(false, s.getInput))
+
+	// Public routes
+	s.mux.HandleFunc("GET /help", s.getHelp)
+	s.mux.HandleFunc("GET /rules", s.getRules)
 }

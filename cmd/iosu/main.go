@@ -136,6 +136,14 @@ func buildCommands() []Command {
 	cuSec := cuFlags.String("secondary-text", "", "secondary text")
 	cuContest := cuFlags.String("current-contest", "", "current contest")
 
+	cihFlags := flag.NewFlagSet("import-help", flag.ExitOnError)
+	attachConfigFlag(cihFlags)
+	cihFile := cihFlags.String("i", "", "path to markdown file")
+
+	cirFlags := flag.NewFlagSet("import-rules", flag.ExitOnError)
+	attachConfigFlag(cirFlags)
+	cirFile := cirFlags.String("i", "", "path to markdown file")
+
 	abFlags := flag.NewFlagSet("batch-create", flag.ExitOnError)
 	attachConfigFlag(abFlags)
 	abFile := abFlags.String("i", "", "path to CSV file")
@@ -337,6 +345,42 @@ func buildCommands() []Command {
 						}
 						fmt.Println("Config updated successfully.")
 						return nil
+					},
+				},
+				{
+					Name:  "import-help",
+					Short: "set help page content from a markdown file",
+					Flags: cihFlags,
+					Run: func(ctx context.Context, svc *Services) error {
+						if *cihFile == "" {
+							return fmt.Errorf("-i flag is required")
+						}
+						content, err := os.ReadFile(*cihFile)
+						if err != nil {
+							return fmt.Errorf("unable to read file: %w", err)
+						}
+						s := string(content)
+						return svc.configService.UpdateConfig(ctx, service.UpdateConfigInput{
+							HelpContent: &s,
+						})
+					},
+				},
+				{
+					Name:  "import-rules",
+					Short: "set rules page content from a markdown file",
+					Flags: cirFlags,
+					Run: func(ctx context.Context, svc *Services) error {
+						if *cirFile == "" {
+							return fmt.Errorf("-i flag is required")
+						}
+						content, err := os.ReadFile(*cirFile)
+						if err != nil {
+							return fmt.Errorf("unable to read file: %w", err)
+						}
+						s := string(content)
+						return svc.configService.UpdateConfig(ctx, service.UpdateConfigInput{
+							RulesContent: &s,
+						})
 					},
 				},
 			},

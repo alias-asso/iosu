@@ -88,7 +88,7 @@ type Config struct {
 	MainText       string
 	SecondaryText  string
 	CurrentContest string
-	HelpCOntent    string
+	HelpContent    string
 	RulesContent   string
 }
 
