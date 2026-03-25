@@ -94,6 +94,11 @@ type Config struct {
 	CreditsContent string
 }
 
+type UserWithSolves struct {
+	User
+	Solves []Solve
+}
+
 func Migrate(db *gorm.DB) error {
 	err := db.AutoMigrate(
 		&User{},
