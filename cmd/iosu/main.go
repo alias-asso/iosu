@@ -144,6 +144,14 @@ func buildCommands() []Command {
 	attachConfigFlag(cirFlags)
 	cirFile := cirFlags.String("i", "", "path to markdown file")
 
+	cilFlags := flag.NewFlagSet("import-legal", flag.ExitOnError)
+	attachConfigFlag(cilFlags)
+	cilFile := cilFlags.String("i", "", "path to markdown file")
+
+	cicFlags := flag.NewFlagSet("import-credits", flag.ExitOnError)
+	attachConfigFlag(cicFlags)
+	cicFile := cicFlags.String("i", "", "path to markdown file")
+
 	abFlags := flag.NewFlagSet("batch-create", flag.ExitOnError)
 	attachConfigFlag(abFlags)
 	abFile := abFlags.String("i", "", "path to CSV file")
@@ -380,6 +388,42 @@ func buildCommands() []Command {
 						s := string(content)
 						return svc.configService.UpdateConfig(ctx, service.UpdateConfigInput{
 							RulesContent: &s,
+						})
+					},
+				},
+				{
+					Name:  "import-legal",
+					Short: "set legal page content from a markdown file",
+					Flags: cilFlags,
+					Run: func(ctx context.Context, svc *Services) error {
+						if *cilFile == "" {
+							return fmt.Errorf("-i flag is required")
+						}
+						content, err := os.ReadFile(*cilFile)
+						if err != nil {
+							return fmt.Errorf("unable to read file: %w", err)
+						}
+						s := string(content)
+						return svc.configService.UpdateConfig(ctx, service.UpdateConfigInput{
+							LegalContent: &s,
+						})
+					},
+				},
+				{
+					Name:  "import-credits",
+					Short: "set credits page content from a markdown file",
+					Flags: cicFlags,
+					Run: func(ctx context.Context, svc *Services) error {
+						if *cicFile == "" {
+							return fmt.Errorf("-i flag is required")
+						}
+						content, err := os.ReadFile(*cicFile)
+						if err != nil {
+							return fmt.Errorf("unable to read file: %w", err)
+						}
+						s := string(content)
+						return svc.configService.UpdateConfig(ctx, service.UpdateConfigInput{
+							CreditsContent: &s,
 						})
 					},
 				},

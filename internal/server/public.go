@@ -42,7 +42,7 @@ func (s *Server) getHelp(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	s.renderWithConfig(w, r.Context(), "pages/help.gohtml", helpHTML, config)
+	s.renderWithConfig(w, r.Context(), "pages/page.gohtml", helpHTML, config)
 }
 
 func (s *Server) getRules(w http.ResponseWriter, r *http.Request) {
@@ -56,5 +56,32 @@ func (s *Server) getRules(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	s.renderWithConfig(w, r.Context(), "pages/rules.gohtml", rulesHTML, config)
+	s.renderWithConfig(w, r.Context(), "pages/page.gohtml", rulesHTML, config)
+}
+
+func (s *Server) getLegal(w http.ResponseWriter, r *http.Request) {
+	config, err := s.configService.GetConfig(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	legalHTML, err := parseMarkdown(config.LegalContent)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	s.renderWithConfig(w, r.Context(), "pages/page.gohtml", legalHTML, config)
+}
+func (s *Server) getCredits(w http.ResponseWriter, r *http.Request) {
+	config, err := s.configService.GetConfig(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	creditsHTML, err := parseMarkdown(config.CreditsContent)
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	s.renderWithConfig(w, r.Context(), "pages/page.gohtml", creditsHTML, config)
 }

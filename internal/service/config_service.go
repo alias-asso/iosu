@@ -20,12 +20,14 @@ func NewConfigService(repo repository.ConfigRepository) ConfigService {
 
 func (s *ConfigService) CreateDefaultConfig(ctx context.Context) {
 	config := &database.Config{
-		Singleton:     1,
-		SiteTitle:     "title",
-		MainText:      "example main text",
-		SecondaryText: "example secondary text",
-		HelpContent:   "default *help* content (markdown rendered)",
-		RulesContent:  "default *rules* content (markdown rendered)",
+		Singleton:      1,
+		SiteTitle:      "title",
+		MainText:       "example main text",
+		SecondaryText:  "example secondary text",
+		HelpContent:    "default *help* content (markdown rendered)",
+		RulesContent:   "default *rules* content (markdown rendered)",
+		LegalContent:   "default *legal* content (markdown rendered)",
+		CreditsContent: "default *credits* content (markdown rendered)",
 	}
 	ok, err := s.repo.CreateIfNotExist(ctx, config)
 	if err != nil {
@@ -44,6 +46,8 @@ type UpdateConfigInput struct {
 	CurrentContest *string
 	HelpContent    *string
 	RulesContent   *string
+	LegalContent   *string
+	CreditsContent *string
 }
 
 func (s *ConfigService) UpdateConfig(ctx context.Context, input UpdateConfigInput) error {

@@ -35,4 +35,5 @@ func registerRoutes(s *Server) {
 	// Public routes
 	s.mux.HandleFunc("GET /help", s.getHelp)
 	s.mux.HandleFunc("GET /rules", s.getRules)
+	s.mux.HandleFunc("GET /legal", s.getLegal)
 }
