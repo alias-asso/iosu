@@ -1,0 +1,28 @@
+{{ define "heading" }}
+
+{{ end }}
+{{ define "content" }}
+<main>
+    <h1>Classement des joueurs</h1>
+    {{ if eq (len .Page) 0 }}
+    <sub>Aucun joueur n'a résolu de challenges pour le moment.</sub>
+    {{ else }}
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Points</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{ range $user := .Page  }}
+            <tr>
+            <td>{{ $user.Username }}</td>
+            <td>{{ $user.Score }}</td>
+            </tr>
+            {{ end }}
+            </tbody>
+        </table>
+    {{ end }}
+</main>
+{{ end }}
