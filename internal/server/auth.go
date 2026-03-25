@@ -21,8 +21,11 @@ func (s *Server) postLogin(w http.ResponseWriter, r *http.Request) {
 
 	token, err := s.authService.Login(r.Context(), input)
 	if err != nil {
-		// TODO: important : handle error for real
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.render(w, r.Context(), "pages/login.gohtml", struct {
+			Error string
+		}{
+			Error: err.Error(),
+		})
 		return
 	}
 
@@ -72,7 +75,11 @@ func (s *Server) postBatchCreateAccounts(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) getLogin(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r.Context(), "pages/login.gohtml", nil)
+	s.render(w, r.Context(), "pages/login.gohtml", struct {
+		Error string
+	}{
+		Error: "",
+	})
 }
 
 func (s *Server) postLogout(w http.ResponseWriter, r *http.Request) {

@@ -12,6 +12,9 @@
       <div>
         <label for="password">Mot de passe</label>
         <input type="password" id="password" name="password" />
+        {{ if ne .Page.Error "" }}
+        <sub class="danger">{{ .Page.Error }}</sub>
+        {{ end }}
       </div>
       <div class="btns btns--no-marge">
         <button class="btn" type="submit">Se connecter</button>

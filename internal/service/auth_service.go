@@ -268,7 +268,7 @@ func (s *AuthService) BatchRegister(ctx context.Context, csvContent string) erro
 
 		activation := &database.ActivationCode{
 			Code:       randSeq(32),
-			Expiration: time.Now().Add(24 * time.Hour),
+			Expiration: time.Now().Add(5 * 24 * time.Hour),
 		}
 
 		err := s.repo.CreateUserWithActivation(ctx, user, activation)
