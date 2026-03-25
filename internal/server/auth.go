@@ -104,8 +104,10 @@ func (s *Server) getActivate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.render(w, r.Context(), "pages/activate-account.gohtml", struct {
+		Error          string
 		ActivationCode string
 	}{
+		Error:          "",
 		ActivationCode: ac.Code})
 }
 
@@ -114,7 +116,12 @@ func (s *Server) postActivate(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 
 	if len(code) != 32 {
-		http.Error(w, "Invalid or expired activation code", http.StatusBadRequest)
+		s.render(w, r.Context(), "pages/activate-account.gohtml", struct {
+			Error          string
+			ActivationCode string
+		}{
+			Error:          "invalid or expired activation code",
+			ActivationCode: code})
 		return
 	}
 
@@ -124,8 +131,13 @@ func (s *Server) postActivate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := s.authService.Activate(r.Context(), input)
-	if err != nil && errors.Is(err, service.ErrActivationCodeExpired) {
-		http.Error(w, "Invalid ore expired activation code", http.StatusBadRequest)
+	if err != nil {
+		s.render(w, r.Context(), "pages/activate-account.gohtml", struct {
+			Error          string
+			ActivationCode string
+		}{
+			Error:          err.Error(),
+			ActivationCode: code})
 		return
 	}
 	http.Redirect(w, r, "/login", http.StatusFound)

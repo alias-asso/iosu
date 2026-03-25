@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"net/mail"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -48,6 +49,7 @@ var (
 	ErrInternalError         = errors.New("internal error")
 	ErrInvalidActivationCode = errors.New("activation code is invalid")
 	ErrActivationCodeExpired = errors.New("activation code has expired")
+	ErrInvalidPassword       = errors.New("Le mot de passe ne respecte pas les critères demandés.")
 )
 
 type Claims struct {
@@ -92,6 +94,28 @@ func encryptPassword(password string) (string, error) {
 func comparePassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
+}
+
+func validatePassword(s string) bool {
+	if len(s) < 8 {
+		return false
+	}
+
+	checks := []string{
+		`[A-Z]`,                  // uppercase
+		`[a-z]`,                  // lowercase
+		`[0-9]`,                  // number
+		`[!@#$%^&*(),.?":{}|<>]`, // special char
+	}
+
+	for _, pattern := range checks {
+		matched, _ := regexp.MatchString(pattern, s)
+		if !matched {
+			return false
+		}
+	}
+
+	return true
 }
 
 type LoginInput struct {
@@ -285,6 +309,11 @@ func (s *AuthService) Activate(ctx context.Context, input ActivateInput) error {
 	if now.After(activationCode.Expiration) {
 		return ErrActivationCodeExpired
 	}
+
+	if !validatePassword(input.Password) {
+		return ErrInvalidPassword
+	}
+
 	user := activationCode.User
 	encryptedPassword, err := encryptPassword(input.Password)
 	if err != nil {

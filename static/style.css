@@ -280,6 +280,10 @@ button {
   margin-bottom: 0;
 }
 
+.danger {
+    color: var(--color-danger);
+}
+
 .subtitle {
   margin-top: -0.75rem;
 
