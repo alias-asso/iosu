@@ -125,3 +125,14 @@ func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, r.Context(), "pages/contest.gohtml", problems)
 }
+
+func (s *Server) getLeaderboard(w http.ResponseWriter, r *http.Request) {
+	//contestSlug := r.PathValue("slug")
+
+	leaderboard, err := s.authService.GetLeaderboard(r.Context())
+	if err != nil {
+		s.render(w, r.Context(), "pages/error.gohtml", err)
+	}
+
+	s.render(w, r.Context(), "pages/leaderboard.gohtml", leaderboard)
+}

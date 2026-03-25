@@ -158,6 +158,7 @@ func buildCommands() []Command {
 
 	acFlags := flag.NewFlagSet("unactivated", flag.ExitOnError)
 	attachConfigFlag(acFlags)
+	acUrl := acFlags.String("url", "url", "url to use")
 
 	return []Command{
 		{
@@ -464,7 +465,7 @@ func buildCommands() []Command {
 							return err
 						}
 						for _, a := range ac {
-							fmt.Printf("%s : %s : https://url/activate/%s", a.User.Username, a.User.Email, a.Code)
+							fmt.Printf("%s : %s : https://%s/activate/%s\n", a.User.Username, a.User.Email, *acUrl, a.Code)
 						}
 						return nil
 					},

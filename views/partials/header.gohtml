@@ -8,6 +8,7 @@
       <li><a href="/">Accueil</a></li>
       <li><a href="/help">Aide</a></li>
       <li><a href="/rules">Règles</a></li>
+      <li><a href="/contest/{{ .Config.CurrentContest }}/leaderboard">Classement</a></li>
       <li><a href="/contest/{{ .Config.CurrentContest }}">Problèmes</a></li>
       {{ if .LoggedIn }}
       <li><a href="#" hx-post="/logout">Déconnexion</a></li>

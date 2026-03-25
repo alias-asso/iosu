@@ -16,7 +16,7 @@ type mockUserRepo struct {
 	getFn                       func(ctx context.Context, userID uint) (database.User, error)
 	getActivationCodeFn         func(ctx context.Context, code string) (database.ActivationCode, error)
 	getActivationCodesFn        func(ctx context.Context) ([]database.ActivationCode, error)
-	getNonAdminUsersWithSolveFn func(ctx context.Context) ([]database.UserWithSolves, error)
+	getNonAdminUsersWithSolveFn func(ctx context.Context) ([]database.User, error)
 }
 
 func (m *mockUserRepo) GetByUsername(ctx context.Context, username string) (database.User, error) {
@@ -50,7 +50,7 @@ func (m *mockUserRepo) GetActivationCodes(ctx context.Context) ([]database.Activ
 	return m.getActivationCodesFn(ctx)
 }
 
-func (m *mockUserRepo) GetNonAdminUsersWithSolves(ctx context.Context) ([]database.UserWithSolves, error) {
+func (m *mockUserRepo) GetNonAdminUsersWithSolves(ctx context.Context) ([]database.User, error) {
 	return m.getNonAdminUsersWithSolveFn(ctx)
 }
 

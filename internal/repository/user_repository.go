@@ -16,7 +16,7 @@ type UserRepository interface {
 	CreateUserWithActivation(ctx context.Context, user *database.User, activation *database.ActivationCode) error
 	GetActivationCode(ctx context.Context, code string) (database.ActivationCode, error)
 	GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error)
-	GetNonAdminUsersWithSolves(ctx context.Context) ([]database.UserWithSolves, error)
+	GetNonAdminUsersWithSolves(ctx context.Context) ([]database.User, error)
 }
 
 type GormUserRepository struct {
@@ -83,13 +83,13 @@ func (r *GormUserRepository) GetActivationCode(ctx context.Context, code string)
 func (r *GormUserRepository) GetActivationCodes(ctx context.Context) ([]database.ActivationCode, error) {
 	return gorm.G[database.ActivationCode](r.db).
 		Joins(clause.InnerJoin.Association("User"), nil).
-		Where("users.activated = ?", true).
+		Where("`User`.activated = ?", false).
 		Preload("User", nil).
 		Find(ctx)
 }
 
-func (r *GormUserRepository) GetNonAdminUsersWithSolves(ctx context.Context) ([]database.UserWithSolves, error) {
-	return gorm.G[database.UserWithSolves](r.db).
+func (r *GormUserRepository) GetNonAdminUsersWithSolves(ctx context.Context) ([]database.User, error) {
+	return gorm.G[database.User](r.db).
 		Preload("Solves.Problem.Difficulty", nil).
 		Where("admin = ? AND activated = ?", false, true).
 		Find(ctx)

@@ -24,6 +24,7 @@ func registerRoutes(s *Server) {
 
 	// Contest routes
 	s.mux.HandleFunc("GET /contest/{slug}/", s.withAuth(false, s.getContest))
+	s.mux.HandleFunc("GET /contest/{slug}/leaderboard", s.withAuth(false, s.getLeaderboard))
 	// s.mux.HandleFunc("POST /contest", s.withAuth(false, s.withAdmin(s.postCreateContest)))
 
 	// Problem routes

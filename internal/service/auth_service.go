@@ -322,3 +322,12 @@ func (s *AuthService) GetActivationCodes(ctx context.Context) ([]database.Activa
 	}
 	return activationCodes, nil
 }
+
+func (s *AuthService) GetLeaderboard(ctx context.Context) ([]database.User, error) {
+	results, err := s.repo.GetNonAdminUsersWithSolves(ctx)
+	if err != nil {
+		return []database.User{}, ErrInternalError
+	}
+
+	return results, nil
+}

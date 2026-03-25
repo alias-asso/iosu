@@ -14,6 +14,15 @@ type User struct {
 	Password  string
 	Activated bool
 	Admin     bool
+	Solves    []Solve
+}
+
+func (u *User) Score() float64 {
+	var total float64
+	for _, s := range u.Solves {
+		total += (float64(s.Problem.Difficulty.Points)*s.Problem.PointsMultiplier + float64(s.Problem.PointsAdder)) * float64(s.Parts)
+	}
+	return total
 }
 
 type ActivationCode struct {
@@ -92,11 +101,6 @@ type Config struct {
 	RulesContent   string
 	LegalContent   string
 	CreditsContent string
-}
-
-type UserWithSolves struct {
-	User
-	Solves []Solve
 }
 
 func Migrate(db *gorm.DB) error {
