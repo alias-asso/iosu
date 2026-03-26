@@ -1,12 +1,16 @@
 package server
 
-import "net/http"
+import (
+	"io/fs"
+	"net/http"
+)
 
 func registerRoutes(s *Server) {
 	s.mux.HandleFunc("GET /", s.withAuth(true, s.getIndex))
 
 	// static assets
-	fileServer := http.FileServer(http.Dir("./static/"))
+	sub, _ := fs.Sub(content, "static")
+	fileServer := http.FileServer(http.FS(sub))
 	s.mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
 	// Login routes

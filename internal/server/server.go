@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"embed"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,6 +11,9 @@ import (
 	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/service"
 )
+
+//go:embed static views
+var content embed.FS
 
 type authService interface {
 	Login(ctx context.Context, input service.LoginInput) (string, error)

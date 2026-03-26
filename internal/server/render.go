@@ -27,7 +27,8 @@ func (s *Server) render(w http.ResponseWriter, ctx context.Context, templatePath
 }
 
 func (s *Server) renderWithConfig(w http.ResponseWriter, ctx context.Context, templatePath string, pageData any, config database.Config) {
-	tpl := template.Must(template.ParseFiles(
+	tpl := template.Must(template.ParseFS(
+		content,
 		"views/partials/header.gohtml",
 		"views/partials/footer.gohtml",
 		"views/layout/base.gohtml",
@@ -48,7 +49,8 @@ func (s *Server) renderWithConfig(w http.ResponseWriter, ctx context.Context, te
 }
 
 func (s *Server) renderPartial(w http.ResponseWriter, _ context.Context, templatePath string, data any) {
-	tpl := template.Must(template.ParseFiles(
+	tpl := template.Must(template.ParseFS(
+		content,
 		path.Join("views", templatePath),
 	))
 
