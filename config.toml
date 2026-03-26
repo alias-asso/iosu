@@ -3,7 +3,7 @@ jwt_key = "0sb4kq6WV0WAefxA"
 default_admin_password = "pleasechangeme"
 data_directory = "./testdata"
 db_type = "sqlite"
-dev_mode = true
+dev_mode = false
 
 [sqlite]
 db_path = "./db.sqlite"

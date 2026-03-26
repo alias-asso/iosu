@@ -12,7 +12,7 @@ import (
 func ConnectSqlite(path string, config *config.Config) (error, *gorm.DB) {
 	var gormConfig *gorm.Config = &gorm.Config{}
 	if !config.DevMode {
-		gormConfig.Logger.LogMode(logger.Silent)
+		gormConfig = &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
 	}
 	db, err := gorm.Open(sqlite.Open(path), gormConfig)
 	if err != nil {
