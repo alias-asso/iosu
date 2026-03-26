@@ -231,7 +231,7 @@ func (s *AuthService) BatchRegister(ctx context.Context, csvContent string) erro
 			return ErrUsernameRequired
 		}
 
-		if len(username) > 16 {
+		if len(username) > 32 {
 			return ErrUsernameTooLong
 		}
 
