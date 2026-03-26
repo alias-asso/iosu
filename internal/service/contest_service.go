@@ -65,7 +65,7 @@ func (s *ContestService) CreateContest(ctx context.Context, input CreateContestI
 		return err
 	}
 
-	contestDirPath := path.Join(s.dataDir, input.Name)
+	contestDirPath := path.Join(s.dataDir, input.Slug)
 
 	if info, err := os.Stat(contestDirPath); err == nil && info.IsDir() {
 		return ErrDirectoryExists

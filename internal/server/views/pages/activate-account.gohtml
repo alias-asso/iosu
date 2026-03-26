@@ -9,7 +9,7 @@
       <div>
         <label for="password">Choisissez un mot de passe</label>
         <input type="password" id="password" name="password" />
-        <sub>Le mot de passe doit faire 8 caractères ou plus, contenir des majuscules et des minuscules, aumoins un chiffre et un caraactère spécial.</sub>
+        <sub>Le mot de passe doit faire 8 caractères ou plus, contenir des majuscules et des minuscules, au moins un chiffre et un caraactère spécial.</sub>
         {{ if ne .Page.Error "" }}
         <sub class="danger">{{ .Page.Error }}</sub>
         {{ end }}
