@@ -16,7 +16,7 @@ var (
 type ContestRepository interface {
 	Create(ctx context.Context, contest *database.Contest) error
 	Update(ctx context.Context, id uint, contest database.Contest) error
-	GetByName(ctx context.Context, name string) (database.Contest, error)
+	GetBySlug(ctx context.Context, slug string) (database.Contest, error)
 	Get(ctx context.Context, id uint) (database.Contest, error)
 }
 
@@ -54,8 +54,8 @@ func (r *GormContestRepository) Update(
 	return nil
 }
 
-func (r *GormContestRepository) GetByName(ctx context.Context, name string) (database.Contest, error) {
-	return gorm.G[database.Contest](r.db).Where("name = ?", name).First(ctx)
+func (r *GormContestRepository) GetBySlug(ctx context.Context, slug string) (database.Contest, error) {
+	return gorm.G[database.Contest](r.db).Where("slug = ?", slug).First(ctx)
 }
 
 func (r *GormContestRepository) Get(ctx context.Context, id uint) (database.Contest, error) {

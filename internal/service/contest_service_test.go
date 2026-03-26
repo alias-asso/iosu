@@ -12,7 +12,7 @@ import (
 type mockContestRepo struct {
 	createFn    func(ctx context.Context, contest *database.Contest) error
 	updateFn    func(ctx context.Context, id uint, contest database.Contest) error
-	getByNameFn func(ctx context.Context, name string) (database.Contest, error)
+	getBySlugFn func(ctx context.Context, slug string) (database.Contest, error)
 	getFn       func(ctx context.Context, id uint) (database.Contest, error)
 }
 
@@ -24,9 +24,9 @@ func (m *mockContestRepo) Update(ctx context.Context, id uint, contest database.
 	return m.updateFn(ctx, id, contest)
 }
 
-func (m *mockContestRepo) GetByName(ctx context.Context, name string) (database.Contest, error) {
-	if m.getByNameFn != nil {
-		return m.getByNameFn(ctx, name)
+func (m *mockContestRepo) GetBySlug(ctx context.Context, name string) (database.Contest, error) {
+	if m.getBySlugFn != nil {
+		return m.getBySlugFn(ctx, name)
 	}
 	return database.Contest{}, nil
 }

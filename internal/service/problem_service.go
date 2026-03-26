@@ -61,7 +61,7 @@ func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemI
 		return ErrDifficultyNotFound
 	}
 
-	contest, err := s.contestService.repo.GetByName(ctx, input.ContestName)
+	contest, err := s.contestService.repo.GetBySlug(ctx, input.ContestName)
 	if err != nil {
 		return repository.ErrContestNotFound
 	}
@@ -293,7 +293,7 @@ type GetProblemsInput struct {
 }
 
 func (s *ProblemService) GetProblems(ctx context.Context, input GetProblemsInput) ([]database.Problem, error) {
-	contest, err := s.contestService.repo.GetByName(ctx, input.ContestSlug)
+	contest, err := s.contestService.repo.GetBySlug(ctx, input.ContestSlug)
 	if err != nil {
 		return []database.Problem{}, ErrContestNotFound
 	}

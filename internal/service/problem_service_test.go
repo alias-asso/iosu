@@ -185,11 +185,11 @@ func TestCreateProblemService(t *testing.T) {
 			createFn: func(ctx context.Context, contest *database.Contest) error {
 				return nil
 			},
-			getByNameFn: func(ctx context.Context, name string) (database.Contest, error) {
+			getBySlugFn: func(ctx context.Context, slug string) (database.Contest, error) {
 				if tt.contestErr != nil {
 					return database.Contest{}, tt.contestErr
 				}
-				return database.Contest{Model: gorm.Model{ID: 1}, Name: name}, nil
+				return database.Contest{Model: gorm.Model{ID: 1}, Slug: slug}, nil
 			},
 		}
 
