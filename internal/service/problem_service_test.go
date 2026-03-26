@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/repository"
@@ -285,7 +286,7 @@ func TestGetProblemPartsHtml(t *testing.T) {
 				if tt.problemErr != nil {
 					return database.Problem{}, tt.problemErr
 				}
-				return database.Problem{Model: gorm.Model{ID: 1}, Slug: tt.slug, Parts: tt.totalParts}, nil
+				return database.Problem{Model: gorm.Model{ID: 1}, Slug: tt.slug, Parts: tt.totalParts, Contest: database.Contest{StartTime: time.Now().Add(-1 * time.Hour), EndTime: time.Now().Add(time.Hour)}}, nil
 			},
 			getSolveByUserAndProblemFn: func(ctx context.Context, userID uint, problemID uint) (database.Solve, error) {
 				if !tt.hasSolve {
