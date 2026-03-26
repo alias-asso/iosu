@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -110,6 +111,7 @@ func (s *Server) getActivate(w http.ResponseWriter, r *http.Request) {
 		s.render(w, r.Context(), "pages/error.gohtml", "Invalid or expired activation code.")
 		return
 	}
+
 	s.render(w, r.Context(), "pages/activate-account.gohtml", struct {
 		Error          string
 		ActivationCode string
@@ -147,5 +149,7 @@ func (s *Server) postActivate(w http.ResponseWriter, r *http.Request) {
 			ActivationCode: code})
 		return
 	}
+
+	log.Println("Account successfully activated.")
 	http.Redirect(w, r, "/login", http.StatusFound)
 }

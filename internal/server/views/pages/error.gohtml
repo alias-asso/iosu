@@ -1,7 +1,9 @@
 {{ define "heading" }}
 {{ end }}
 {{ define "content" }}
-<main>
-  <p>{{ .Page }}</p>
+<main class="align-in-center">
+    <div class="error-block">
+        <p>Erreur : {{ .Page }}</p>
+    </div>
 </main>
 {{ end }}

@@ -301,6 +301,7 @@ func (s *AuthService) Activate(ctx context.Context, input ActivateInput) error {
 	}
 	user.Password = encryptedPassword
 	user.Activated = true
+	log.Printf("User %s is activating their account.\n", user.Username)
 	return s.repo.UpdateByUsername(ctx, user)
 }
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"os"
 	"path"
 	"time"
@@ -252,6 +253,7 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 
 	// Check submited value
 	if outputData.Output != input.Value {
+		log.Printf("User %s : unsuccessful solve attempt.", user.Username)
 		return false, nil
 	}
 
@@ -268,6 +270,7 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 		if err != nil {
 			return false, ErrUnableToSolve
 		}
+		log.Printf("User %s successfully solved problem %s part %d.\n", user.Username, problem.Slug, solve.Parts)
 		return true, nil
 	}
 
@@ -281,6 +284,7 @@ func (s *ProblemService) Submit(ctx context.Context, input SubmitInput) (bool, e
 	if err != nil {
 		return false, ErrUnableToSolve
 	}
+	log.Printf("User %s successfully solved problem %s part %d.\n", user.Username, problem.Slug, solve.Parts)
 	return true, nil
 }
 
