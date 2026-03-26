@@ -1,11 +1,14 @@
 package server
 
 import (
+	"cmp"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
+	"github.com/alias-asso/iosu/internal/database"
 	"github.com/alias-asso/iosu/internal/repository"
 	"github.com/alias-asso/iosu/internal/service"
 )
@@ -127,6 +130,13 @@ func (s *Server) getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.render(w, r.Context(), "pages/error.gohtml", err)
 	}
+	slices.SortFunc(leaderboard, func(a, b database.User) int {
+		return cmp.Compare(b.Score(), a.Score()) // descending
+	})
+
+	leaderboard = slices.DeleteFunc(leaderboard, func(u database.User) bool {
+		return u.Score() == 0
+	})
 
 	s.render(w, r.Context(), "pages/leaderboard.gohtml", leaderboard)
 }
