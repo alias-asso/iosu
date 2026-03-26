@@ -115,6 +115,13 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 		return nil, ErrProblemNotFound
 	}
 
+	currentTime := time.Now()
+	if currentTime.Before(problem.Contest.StartTime) {
+		return nil, ErrContestNotStarted
+	}
+	if currentTime.After(problem.Contest.EndTime) {
+		return nil, ErrContestFinished
+	}
 	userSolves, err := s.repo.GetSolvesAmount(ctx, input.UserID, problem.ID)
 	if err != nil {
 		return nil, ErrInternalError
@@ -285,6 +292,14 @@ func (s *ProblemService) GetProblems(ctx context.Context, input GetProblemsInput
 	contest, err := s.contestService.repo.GetByName(ctx, input.ContestSlug)
 	if err != nil {
 		return []database.Problem{}, ErrContestNotFound
+	}
+
+	currentTime := time.Now()
+	if currentTime.Before(contest.StartTime) {
+		return []database.Problem{}, ErrContestNotStarted
+	}
+	if currentTime.After(contest.EndTime) {
+		return []database.Problem{}, ErrContestFinished
 	}
 	problems, err := s.repo.GetAll(ctx, contest.ID)
 	if err != nil {

@@ -114,14 +114,8 @@ func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
 	}
 	problems, err := s.problemService.GetProblems(r.Context(), getProblemsInput)
 	if err != nil {
-		switch {
-		case errors.Is(err, service.ErrContestNotFound):
-			s.render(w, r.Context(), "pages/error.gohtml", err.Error())
-			return
-		default:
-			s.render(w, r.Context(), "pages/error.gohtml", "internal server error")
-			return
-		}
+		s.render(w, r.Context(), "pages/error.gohtml", err.Error())
+		return
 	}
 	s.render(w, r.Context(), "pages/contest.gohtml", problems)
 }
