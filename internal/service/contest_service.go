@@ -17,17 +17,6 @@ type ContestService struct {
 	dataDir string
 }
 
-var (
-	ErrContestNotFound      = errors.New("contest not found")
-	ErrNameTooLong          = errors.New("name too long")
-	ErrSlugTooLong          = errors.New("slug too long")
-	ErrEmptyName            = errors.New("name is empty")
-	ErrEmptySlug            = errors.New("slug is empty")
-	ErrContestAlreadyExists = errors.New("contest already exists")
-	ErrDirectoryExists      = errors.New("directory exists")
-	ErrInvalidTimeRange     = errors.New("invalid time range")
-)
-
 func NewConstestService(repo repository.ContestRepository, dataDir string) ContestService {
 	return ContestService{
 		repo:    repo,

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/csv"
-	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -32,25 +31,6 @@ func NewAuthService(repo repository.UserRepository, jwtSecret string, defaultAdm
 		defaultAdminPassword: defaultAdminPassword,
 	}
 }
-
-var (
-	ErrUsernameTooLong       = errors.New("username too long")
-	ErrUsernameRequired      = errors.New("username required")
-	ErrPasswordTooLong       = errors.New("password too long")
-	ErrPasswordRequired      = errors.New("password required")
-	ErrNonExistantAccount    = errors.New("no account is associated with this username")
-	ErrWrongPassword         = errors.New("wrong password")
-	ErrInvalidEmail          = errors.New("invalid email")
-	ErrUserAlreadyExist      = errors.New("this user already exist")
-	ErrInvalidCSV            = errors.New("invalid csv file")
-	ErrInvalidCSVHeader      = errors.New("invalid csv header")
-	ErrInvalidInput          = errors.New("invalid input")
-	ErrUserNotFound          = errors.New("user not found")
-	ErrInternalError         = errors.New("internal error")
-	ErrInvalidActivationCode = errors.New("activation code is invalid")
-	ErrActivationCodeExpired = errors.New("activation code has expired")
-	ErrInvalidPassword       = errors.New("Le mot de passe ne respecte pas les critères demandés.")
-)
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`

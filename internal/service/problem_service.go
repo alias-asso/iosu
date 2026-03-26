@@ -16,21 +16,6 @@ import (
 	"github.com/yuin/goldmark/extension"
 )
 
-var (
-	ErrDifficultyNotFound    = errors.New("difficulty not found")
-	ErrProblemNotFound       = errors.New("problem not found")
-	ErrPartTooBig            = errors.New("this part is too big")
-	ErrCreatingData          = errors.New("internal error creating problem data")
-	ErrContestNotStarted     = errors.New("contest has not started")
-	ErrContestFinished       = errors.New("contest has finished")
-	ErrOutputNotFound        = errors.New("output not found")
-	ErrUnableToSolve         = errors.New("unable to solve problem")
-	ErrUnableToCreateProblem = errors.New("unable to create problem")
-	ErrPartNotFound          = errors.New("a part has not been found")
-	ErrAlreadySolved         = errors.New("this part has already been solved")
-	ErrInputNotFound         = errors.New("input not found")
-)
-
 type ProblemService struct {
 	repo           repository.ProblemRepository
 	contestService *ContestService
