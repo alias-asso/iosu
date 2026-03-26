@@ -5,7 +5,7 @@
 {{ else }}
     {{ if .Success }}
     <div class="response response--success">
-    <p>Bonne réponse {{ if .MaxPart }}{{ else }}<a href=".">partie suivante</a>{{ end }}</p>
+    <p>Bonne réponse {{ if .MaxPart }}{{ else }}<a class="btn" href=".">partie suivante</a>{{ end }}</p>
     </div>
     {{ else }}
     <div class="response response--danger">
