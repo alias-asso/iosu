@@ -41,5 +41,5 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("GET /help", s.getHelp)
 	s.mux.HandleFunc("GET /rules", s.getRules)
 	s.mux.HandleFunc("GET /legal", s.getLegal)
-	s.mux.HandleFunc("GET /credits", s.getContest)
+	s.mux.HandleFunc("GET /credits", s.getCredits)
 }
