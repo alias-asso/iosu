@@ -38,8 +38,8 @@ func registerRoutes(s *Server) {
 	s.mux.HandleFunc("GET /contest/{contest_slug}/{problem_slug}/input/", s.withAuth(false, s.getInput))
 
 	// Public routes
-	s.mux.HandleFunc("GET /help", s.getHelp)
-	s.mux.HandleFunc("GET /rules", s.getRules)
-	s.mux.HandleFunc("GET /legal", s.getLegal)
-	s.mux.HandleFunc("GET /credits", s.getCredits)
+	s.mux.HandleFunc("GET /help", s.withAuth(true, s.getHelp))
+	s.mux.HandleFunc("GET /rules", s.withAuth(true, s.getRules))
+	s.mux.HandleFunc("GET /legal", s.withAuth(true, s.getLegal))
+	s.mux.HandleFunc("GET /credits", s.withAuth(true, s.getCredits))
 }
