@@ -129,7 +129,7 @@ func (s *ProblemService) GetProblemPartsHtml(ctx context.Context, input GetProbl
 	}
 	visibleParts := min(userSolves+1, problem.Parts)
 
-	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Name, problem.Slug)
+	problemPath := path.Join(s.contestService.dataDir, problem.Contest.Slug, problem.Slug)
 	result := make([]template.HTML, visibleParts)
 
 	md := goldmark.New(
