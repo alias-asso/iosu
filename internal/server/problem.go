@@ -26,7 +26,7 @@ func (s *Server) getProblem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if problem.Contest.Name != contestSlug {
+	if problem.Contest.Slug != contestSlug {
 		s.render(w, r.Context(), "pages/error.gohtml", errors.New("Le problème ne fait pas partie du tournois."))
 		return
 	}
