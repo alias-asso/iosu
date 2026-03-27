@@ -78,6 +78,13 @@ func (s *ConfigService) UpdateConfig(ctx context.Context, input UpdateConfigInpu
 		update.RulesContent = *input.RulesContent
 	}
 
+	if input.LegalContent != nil {
+		update.LegalContent = *input.LegalContent
+	}
+
+	if input.CreditsContent != nil {
+		update.CreditsContent = *input.CreditsContent
+	}
 	return s.repo.Update(ctx, update)
 }
 
