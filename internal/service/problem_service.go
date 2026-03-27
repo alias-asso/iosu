@@ -337,7 +337,7 @@ type GetProblemInput struct {
 }
 
 func (s *ProblemService) GetProblem(ctx context.Context, input GetProblemInput) (database.Problem, error) {
-	if len(input.Slug) > 20 {
+	if len(input.Slug) > 70 {
 		return database.Problem{}, ErrNameTooLong
 	}
 	problem, err := s.repo.GetBySlug(ctx, input.Slug)
