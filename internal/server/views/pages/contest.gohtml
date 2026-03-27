@@ -33,7 +33,7 @@
       <p class="subtitle">Par {{ $problem.Author }}</p>
       <p class="subtitle">Difficulté : {{ $problem.Difficulty.Name }}</p>
       <div class="btns">
-        <a href="/contest/{{ $problem.Contest.Name }}/{{ $problem.Slug }}" class="btn">Voir le problème</a>
+        <a href="/contest/{{ $problem.Contest.Slug }}/{{ $problem.Slug }}" class="btn">Voir le problème</a>
       </div>
     </article>
     {{ end }}
