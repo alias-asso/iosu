@@ -45,11 +45,11 @@ type CreateProblemInput struct {
 }
 
 func (s *ProblemService) CreateProblem(ctx context.Context, input CreateProblemInput) error {
-	if len(input.Name) >= 20 {
+	if len(input.Name) >= 70 {
 		return ErrNameTooLong
 	}
 
-	if len(input.Slug) >= 20 {
+	if len(input.Slug) >= 70 {
 		return ErrSlugTooLong
 	}
 
