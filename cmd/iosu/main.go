@@ -114,6 +114,7 @@ func buildCommands() []Command {
 	pcContest := pcFlags.String("contest", "", "problem contest")
 	pcName := pcFlags.String("name", "", "problem name")
 	pcDiff := pcFlags.String("difficulty", "", "problem difficulty")
+	pcAuth := pcFlags.String("author", "", "problem author")
 	pcSlug := pcFlags.String("slug", "", "problem slug")
 	pcMult := pcFlags.Float64("multiplier", 1.0, "points multiplier")
 	pcAdder := pcFlags.Uint("adder", 0, "points to add")
@@ -284,6 +285,7 @@ func buildCommands() []Command {
 							DifficultyName:   *pcDiff,
 							Name:             *pcName,
 							Slug:             *pcSlug,
+							Author:           *pcAuth,
 							PointsMultiplier: pcMult,
 							PointsAdder:      pcAdder,
 							Parts:            pcParts,
