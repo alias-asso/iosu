@@ -1,0 +1,32 @@
+{{ define "heading" }}
+<div class="content">
+  <h2>Problèmes</h2>
+  <p>
+    Les différents problèmes de la compétition sont listés ici. Vous pouvez y participer dans l'ordre que vous voulez.
+  </p>
+  <div class="btns">
+    <a href="/help" class="btn">Fonctionnement</a>
+  </div>
+</div>
+{{ end }}
+{{ define "content" }}
+<main class="larger">
+  {{ if eq (len .Page.Problems) 0 }}
+  <p>Aucun problème n'est disponible pour ce concours.</p>
+  {{ else }}
+  <article class="article__container grid">
+    {{ $contest := .Page.Contest }}
+    {{ range $p := .Page.Problems }}
+    <article>
+      <h3>{{ $p.Problem.Name }}</h3>
+      <p class="subtitle">Par {{ $p.Problem.Author }}</p>
+      <p class="subtitle">Difficulté : {{ $p.Difficulty.Name }}</p>
+      <div class="btns">
+        <a href="/contest/{{ $contest.Slug }}/{{ $p.Problem.Slug }}/" class="btn">Voir le problème</a>
+      </div>
+    </article>
+    {{ end }}
+  </article>
+  {{ end }}
+</main>
+{{ end }}

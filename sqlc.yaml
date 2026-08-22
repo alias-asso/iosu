@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: sqlite
+    schema: internal/store/migrations
+    queries: internal/store/query
+    gen:
+      go:
+        package: sqlc
+        out: internal/store/sqlc
+        emit_empty_slices: true
+        rename:
+          solf: "Solve"

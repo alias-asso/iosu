@@ -1,7 +1,12 @@
-node_modules
 db.sqlite
+db.sqlite-wal
+db.sqlite-shm
 main
 dist
 /iosu
 /iosud
 contest_data
+/config.toml
+/users.csv
+*.csv
+/result

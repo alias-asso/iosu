@@ -1,0 +1,20 @@
+# Copy to /etc/iosu/config.toml and fill in. Never commit the real file.
+# Any value can also be supplied via the environment, which wins over this
+# file: IOSU_PORT, IOSU_JWT_KEY, IOSU_ADMIN_PASSWORD, IOSU_DATA_DIR, IOSU_DB_PATH.
+
+server_port = "8990"
+
+# Generate with: head -c 32 /dev/urandom | base64
+# Must be at least 32 characters. Rotating it logs everyone out.
+jwt_key = "CHANGE-ME"
+
+# Password given to the "admin" account the first time the database is created.
+default_admin_password = "CHANGE-ME"
+
+# Where contest directories live: <data_directory>/<contest-slug>/<problem-slug>/partN.md
+data_directory = "/var/iosu/data"
+
+db_path = "/var/iosu/db.sqlite"
+
+# Logs every SQL statement. Never enable in production: it prints password hashes.
+dev_mode = false

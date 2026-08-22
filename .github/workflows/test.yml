@@ -1,4 +1,4 @@
-name: Format and Test
+name: Build and Test
 on:
   pull_request:
     branches: [main]
@@ -6,29 +6,78 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 jobs:
-  format:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - uses: cachix/install-nix-action@v31
         with:
-          go-version: '1.25'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
 
-      - name: Check diff between gofmt and code
-        run: diff <(gofmt -d .) <(echo -n)
-  test:
+      # Compiles both binaries and runs go test ./... in the sandbox.
+      - name: nix build
+        run: nix build --print-build-logs
+
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install Go
-        uses: actions/setup-go@v6
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: gofmt
+        run: nix develop --command bash -c 'diff <(gofmt -d .) <(echo -n)'
+
+      - name: go vet
+        run: nix develop --command go vet ./...
+
+      - name: staticcheck
+        run: nix develop --command staticcheck ./...
+
+      - name: Race detector
+        run: nix develop --command go test -race ./...
+
+      - name: Generated code is up to date
+        run: |
+          nix develop --command sqlc generate
+          git diff --exit-code internal/store/sqlc
+
+      # Informational: the findings are usually in the Go toolchain itself and
+      # only clear when nixpkgs ships a newer one, which no change here can fix.
+      - name: govulncheck
+        continue-on-error: true
+        run: nix develop --command govulncheck ./...
+
+  # Guards the non-Nix path: the Makefile is what Linux and OpenBSD hosts use.
+  portable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
         with:
           go-version: '1.25'
-      - name: Test
-        run: go test ./...
+
+      - name: make check
+        run: make check
+
+      - name: Cross-compile for OpenBSD
+        run: |
+          make clean
+          make GOOS=openbsd GOARCH=amd64
+          make clean
+          make GOOS=openbsd GOARCH=arm64
+
+      - name: make install into a staging directory
+        run: |
+          make clean && make
+          make install DESTDIR="$PWD/stage"
+          test -x stage/usr/local/bin/iosud
+          test -x stage/usr/local/bin/iosu

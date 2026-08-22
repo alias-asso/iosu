@@ -8,72 +8,57 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const PlateformName = "iosu"
+// AppName is used to derive the default config and data locations.
+const AppName = "iosu"
 
-type SqliteDb struct {
-	DbPath string `toml:"db_path"`
-}
-
-type PostgresDb struct {
-	DbUrl    string
-	Username string
-	Password string
-}
-
-type MysqlDb struct {
-	DbUrl    string
-	Username string
-	Password string
-}
+// DefaultPath is where iosud and iosu look for the config file.
+var DefaultPath = fmt.Sprintf("/etc/%s/config.toml", AppName)
 
 type Config struct {
-	ServerPort           string     `toml:"server_port"`
-	JwtKey               string     `toml:"jwt_key"`
-	DefaultAdminPassword string     `toml:"default_admin_password"`
-	DataDirectory        string     `toml:"data_directory"`
-	DevMode              bool       `toml:"dev_mode"`
-	DbType               string     `toml:"db_type"`
-	Sqlite               SqliteDb   `toml:"sqlite"`
-	Mysql                MysqlDb    `toml:"mysql"`
-	Postgres             PostgresDb `toml:"postgres"`
+	ServerPort           string `toml:"server_port"`
+	JWTKey               string `toml:"jwt_key"`
+	DefaultAdminPassword string `toml:"default_admin_password"`
+	DataDir              string `toml:"data_directory"`
+	DBPath               string `toml:"db_path"`
+	DevMode              bool   `toml:"dev_mode"`
 }
 
-func ParseConfig(path string) (*Config, error) {
-	var config Config
-	tomlData, err := os.ReadFile(path)
+// Parse reads path, applies IOSU_* environment overrides and validates the
+// result. Environment variables win over the file so secrets can be kept out
+// of it entirely.
+func Parse(path string) (*Config, error) {
+	var c Config
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return &Config{}, err
+		return nil, err
 	}
-	_, err = toml.Decode(string(tomlData), &config)
-	if err != nil {
-		return &Config{}, err
+	if _, err := toml.Decode(string(data), &c); err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", path, err)
 	}
 
-	switch config.DbType {
-	case "sqlite":
-		if config.Sqlite == (SqliteDb{}) {
-			return &Config{}, errors.New("Empty sqlite config.")
-		}
-	case "mysql":
-		if config.Mysql == (MysqlDb{}) {
-			return &Config{}, errors.New("Empty mysql config.")
-		}
-	case "postgres":
-		if config.Postgres == (PostgresDb{}) {
-			return &Config{}, errors.New("Empty postgres config.")
-		}
-	default:
-		return &Config{}, errors.New("Unsupported database.")
-	}
+	env(&c.ServerPort, "IOSU_PORT")
+	env(&c.JWTKey, "IOSU_JWT_KEY")
+	env(&c.DefaultAdminPassword, "IOSU_ADMIN_PASSWORD")
+	env(&c.DataDir, "IOSU_DATA_DIR")
+	env(&c.DBPath, "IOSU_DB_PATH")
 
-	return &config, nil
+	if c.ServerPort == "" {
+		c.ServerPort = "8990"
+	}
+	if c.DBPath == "" {
+		return nil, errors.New("db_path is required")
+	}
+	if c.DataDir == "" {
+		return nil, errors.New("data_directory is required")
+	}
+	if len(c.JWTKey) < 32 {
+		return nil, errors.New("jwt_key must be at least 32 characters; generate one with: head -c 32 /dev/urandom | base64")
+	}
+	return &c, nil
 }
 
-func DefaultConfig() Config {
-	return Config{
-		DataDirectory: fmt.Sprintf("/var/%s", PlateformName),
-		Sqlite: SqliteDb{
-			DbPath: fmt.Sprintf("/var/%s/db.sqlite", PlateformName),
-		},
+func env(dst *string, name string) {
+	if v, ok := os.LookupEnv(name); ok {
+		*dst = v
 	}
 }
