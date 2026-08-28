@@ -34,5 +34,10 @@ func (a *App) EnsureSiteConfig(ctx context.Context) (created bool, err error) {
 
 // UpdateSiteConfig applies the non-nil fields of in.
 func (a *App) UpdateSiteConfig(ctx context.Context, in sqlc.UpdateSiteConfigParams) error {
+	if !in.CurrentContest.Valid && in.CurrentContest.String != "" {
+		if _, err := a.Contest(ctx, in.CurrentContest.String); err != nil {
+			return err
+		}
+	}
 	return a.store.UpdateSiteConfig(ctx, in)
 }
