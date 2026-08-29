@@ -11,6 +11,19 @@ import (
 	"github.com/alias-asso/iosu/internal/store/sqlc"
 )
 
+type ContestStatus string
+
+const (
+	ContestUpcoming ContestStatus = "à venir"
+	ContestRunning  ContestStatus = "en cours"
+	ContestFinished ContestStatus = "terminé"
+)
+
+type ArchiveEntry struct {
+	Contest Contest
+	Status  ContestStatus
+}
+
 type CreateContestInput struct {
 	Slug      string
 	Name      string
@@ -87,4 +100,27 @@ func (a *App) UpdateContest(ctx context.Context, in sqlc.UpdateContestParams) er
 		return ErrContestNotFound
 	}
 	return nil
+}
+
+func (a *App) Archive(ctx context.Context) ([]ArchiveEntry, error) {
+	contests, err := a.store.ListArchivedContests(ctx)
+	if err != nil {
+		return nil, err
+	}
+	now := a.now().Unix()
+	entries := make([]ArchiveEntry, len(contests))
+	for i, c := range contests {
+		entries[i] = ArchiveEntry{Contest: c, Status: contestStatus(now, c)}
+	}
+	return entries, nil
+}
+
+func contestStatus(now int64, c Contest) ContestStatus {
+	switch {
+	case now < c.StartAt:
+		return ContestUpcoming
+	case now > c.EndAt:
+		return ContestFinished
+	}
+	return ContestRunning
 }

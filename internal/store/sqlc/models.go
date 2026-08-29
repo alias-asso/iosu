@@ -22,6 +22,7 @@ type Contest struct {
 	Description string
 	StartAt     int64
 	EndAt       int64
+	Unlisted    bool
 }
 
 type Difficulty struct {

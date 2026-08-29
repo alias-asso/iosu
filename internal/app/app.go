@@ -68,11 +68,10 @@ func validSlug(s string) bool {
 
 // contestWindow reports whether the contest is currently open.
 func (a *App) contestWindow(c Contest) error {
-	now := a.now().Unix()
-	switch {
-	case now < c.StartAt:
+	switch contestStatus(a.now().Unix(), c) {
+	case ContestUpcoming:
 		return ErrContestNotStarted
-	case now > c.EndAt:
+	case ContestFinished:
 		return ErrContestFinished
 	}
 	return nil

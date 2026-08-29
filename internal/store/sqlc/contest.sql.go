@@ -13,7 +13,7 @@ import (
 const createContest = `-- name: CreateContest :one
 INSERT INTO contests (slug, name, description, start_at, end_at)
 VALUES (?, ?, ?, ?, ?)
-RETURNING id, slug, name, description, start_at, end_at
+RETURNING id, slug, name, description, start_at, end_at, unlisted
 `
 
 type CreateContestParams struct {
@@ -40,12 +40,13 @@ func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (C
 		&i.Description,
 		&i.StartAt,
 		&i.EndAt,
+		&i.Unlisted,
 	)
 	return i, err
 }
 
 const getContest = `-- name: GetContest :one
-SELECT id, slug, name, description, start_at, end_at FROM contests WHERE id = ?
+SELECT id, slug, name, description, start_at, end_at, unlisted FROM contests WHERE id = ?
 `
 
 func (q *Queries) GetContest(ctx context.Context, id int64) (Contest, error) {
@@ -58,12 +59,13 @@ func (q *Queries) GetContest(ctx context.Context, id int64) (Contest, error) {
 		&i.Description,
 		&i.StartAt,
 		&i.EndAt,
+		&i.Unlisted,
 	)
 	return i, err
 }
 
 const getContestBySlug = `-- name: GetContestBySlug :one
-SELECT id, slug, name, description, start_at, end_at FROM contests WHERE slug = ?
+SELECT id, slug, name, description, start_at, end_at, unlisted FROM contests WHERE slug = ?
 `
 
 func (q *Queries) GetContestBySlug(ctx context.Context, slug string) (Contest, error) {
@@ -76,12 +78,48 @@ func (q *Queries) GetContestBySlug(ctx context.Context, slug string) (Contest, e
 		&i.Description,
 		&i.StartAt,
 		&i.EndAt,
+		&i.Unlisted,
 	)
 	return i, err
 }
 
+const listArchivedContests = `-- name: ListArchivedContests :many
+SELECT id, slug, name, description, start_at, end_at, unlisted FROM contests WHERE unlisted = FALSE ORDER BY start_at DESC
+`
+
+func (q *Queries) ListArchivedContests(ctx context.Context) ([]Contest, error) {
+	rows, err := q.db.QueryContext(ctx, listArchivedContests)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Contest{}
+	for rows.Next() {
+		var i Contest
+		if err := rows.Scan(
+			&i.ID,
+			&i.Slug,
+			&i.Name,
+			&i.Description,
+			&i.StartAt,
+			&i.EndAt,
+			&i.Unlisted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listContests = `-- name: ListContests :many
-SELECT id, slug, name, description, start_at, end_at FROM contests ORDER BY start_at DESC
+SELECT id, slug, name, description, start_at, end_at, unlisted FROM contests ORDER BY start_at DESC
 `
 
 func (q *Queries) ListContests(ctx context.Context) ([]Contest, error) {
@@ -100,6 +138,7 @@ func (q *Queries) ListContests(ctx context.Context) ([]Contest, error) {
 			&i.Description,
 			&i.StartAt,
 			&i.EndAt,
+			&i.Unlisted,
 		); err != nil {
 			return nil, err
 		}
@@ -119,15 +158,17 @@ UPDATE contests SET
     slug        = COALESCE(?1, slug),
     name        = COALESCE(?2, name),
     description = COALESCE(?3, description),
-    start_at    = COALESCE(?4, start_at),
-    end_at      = COALESCE(?5, end_at)
-WHERE id = ?6
+    unlisted    = COALESCE(?4, unlisted),
+    start_at    = COALESCE(?5, start_at),
+    end_at      = COALESCE(?6, end_at)
+WHERE id = ?7
 `
 
 type UpdateContestParams struct {
 	Slug        sql.NullString
 	Name        sql.NullString
 	Description sql.NullString
+	Unlisted    sql.NullBool
 	StartAt     sql.NullInt64
 	EndAt       sql.NullInt64
 	ID          int64
@@ -138,6 +179,7 @@ func (q *Queries) UpdateContest(ctx context.Context, arg UpdateContestParams) (i
 		arg.Slug,
 		arg.Name,
 		arg.Description,
+		arg.Unlisted,
 		arg.StartAt,
 		arg.EndAt,
 		arg.ID,

@@ -81,7 +81,7 @@ func (q *Queries) GetDifficultyByName(ctx context.Context, name string) (Difficu
 }
 
 const getProblemBySlug = `-- name: GetProblemBySlug :one
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests     ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -113,6 +113,7 @@ func (q *Queries) GetProblemBySlug(ctx context.Context, slug string) (GetProblem
 		&i.Contest.Description,
 		&i.Contest.StartAt,
 		&i.Contest.EndAt,
+		&i.Contest.Unlisted,
 		&i.Difficulty.ID,
 		&i.Difficulty.Name,
 		&i.Difficulty.Points,
