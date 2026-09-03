@@ -1,6 +1,7 @@
 package web
 
 import (
+	"database/sql"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -349,6 +350,60 @@ func TestErrorsAreShownInFrenchWithoutInternals(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "Problème introuvable") {
 		t.Fatalf("body does not carry the French message: %s", rec.Body.String())
+	}
+}
+
+// setCurrentContest points the site config at slug, or clears it when empty.
+func (ts *testServer) setCurrentContest(slug string) {
+	ts.t.Helper()
+	if err := ts.app.UpdateSiteConfig(ts.t.Context(), sqlc.UpdateSiteConfigParams{
+		CurrentContest: sql.NullString{String: slug, Valid: true},
+	}); err != nil {
+		ts.t.Fatalf("setting current contest %q: %v", slug, err)
+	}
+}
+
+func TestHomePageFallsBackToTheArchive(t *testing.T) {
+	ts := newTestServer(t)
+	ts.setCurrentContest("")
+
+	body := ts.get("/", nil).Body.String()
+	for _, want := range []string{"Rejouer les anciens concours", "Alpha", "/contest/alpha/"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("home page does not mention %q", want)
+		}
+	}
+	for _, unwanted := range []string{"Accéder au concours", "/contest//"} {
+		if strings.Contains(body, unwanted) {
+			t.Errorf("home page still carries %q with no active contest", unwanted)
+		}
+	}
+}
+
+func TestHomePageShowsTheActiveContest(t *testing.T) {
+	ts := newTestServer(t)
+	ts.setCurrentContest("alpha")
+
+	body := ts.get("/", nil).Body.String()
+	for _, want := range []string{"<h2>Alpha</h2>", "Accéder au concours", "/contest/alpha/leaderboard"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("home page does not carry %q", want)
+		}
+	}
+	if strings.Contains(body, "Rejouer les anciens concours") {
+		t.Error("home page lists the archive while a contest is active")
+	}
+}
+
+func TestArchiveIsPublic(t *testing.T) {
+	ts := newTestServer(t)
+
+	rec := ts.get("/archive", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Alpha") {
+		t.Errorf("archive does not list the contest: %s", rec.Body.String())
 	}
 }
 

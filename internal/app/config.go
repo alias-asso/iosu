@@ -34,7 +34,9 @@ func (a *App) EnsureSiteConfig(ctx context.Context) (created bool, err error) {
 
 // UpdateSiteConfig applies the non-nil fields of in.
 func (a *App) UpdateSiteConfig(ctx context.Context, in sqlc.UpdateSiteConfigParams) error {
-	if !in.CurrentContest.Valid && in.CurrentContest.String != "" {
+	// A slug naming no contest would leave the home page pointing at a 404.
+	// The empty string is allowed: it is how the active contest is turned off.
+	if in.CurrentContest.Valid && in.CurrentContest.String != "" {
 		if _, err := a.Contest(ctx, in.CurrentContest.String); err != nil {
 			return err
 		}

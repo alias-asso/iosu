@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -35,6 +36,50 @@ func TestMigrateFromEmpty(t *testing.T) {
 	}
 	if version2 != version {
 		t.Fatalf("version changed on re-open: %d -> %d", version, version2)
+	}
+}
+
+// A database left behind at an older version must pick up only the migrations
+// it is missing. This is what keeps a deployed db.sqlite in step with the
+// schema sqlc generates against.
+func TestMigrateFromAnOlderVersion(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "old.sqlite")
+
+	// Build a database holding nothing but the first migration, the way a
+	// deployment that predates the later ones looks.
+	first, err := migrations.ReadFile("migrations/001_init.sql")
+	if err != nil {
+		t.Fatalf("reading 001: %v", err)
+	}
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatalf("opening: %v", err)
+	}
+	if _, err := db.Exec(string(first)); err != nil {
+		t.Fatalf("applying 001: %v", err)
+	}
+	if _, err := db.Exec("PRAGMA user_version = 1"); err != nil {
+		t.Fatalf("stamping version: %v", err)
+	}
+	db.Close()
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("upgrading: %v", err)
+	}
+	defer s.Close()
+
+	var version int
+	if err := s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+		t.Fatalf("reading version: %v", err)
+	}
+	if version < 2 {
+		t.Fatalf("version %d after upgrade, want the later migrations applied", version)
+	}
+	// Every generated query must have its columns; this is the failure the
+	// missing 002 produced.
+	if _, err := s.ListArchivedContests(t.Context()); err != nil {
+		t.Fatalf("querying an upgraded database: %v", err)
 	}
 }
 

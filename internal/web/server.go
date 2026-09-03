@@ -64,11 +64,11 @@ func parseTemplates() (map[string]*template.Template, error) {
 	if err != nil {
 		return nil, err
 	}
-	shared := []string{
-		"views/layout/base.gohtml",
-		"views/partials/header.gohtml",
-		"views/partials/footer.gohtml",
+	shared, err := fs.Glob(content, "views/partials/*.gohtml")
+	if err != nil {
+		return nil, err
 	}
+	shared = append(shared, "views/layout/base.gohtml")
 
 	out := make(map[string]*template.Template, len(pages)+1)
 	for _, page := range pages {

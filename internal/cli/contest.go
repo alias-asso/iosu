@@ -56,10 +56,12 @@ func contestCommands() []command {
 			name := fs.String("name", "", "new name")
 			start := fs.String("start-time", "", "new start time ("+timeLayout+")")
 			end := fs.String("end-time", "", "new end time ("+timeLayout+")")
+			unlisted := fs.Bool("unlisted", false, "hide the contest from the archive list")
 			return func(ctx context.Context, a *app.App) error {
 				if *id == 0 {
 					return fmt.Errorf("-id is required")
 				}
+				set := wasSet(fs)
 				startAt, err := optTime("start-time", *start)
 				if err != nil {
 					return err
@@ -69,11 +71,12 @@ func contestCommands() []command {
 					return err
 				}
 				if err := a.UpdateContest(ctx, sqlc.UpdateContestParams{
-					ID:      *id,
-					Slug:    optStr(*slug),
-					Name:    optStr(*name),
-					StartAt: startAt,
-					EndAt:   endAt,
+					ID:       *id,
+					Slug:     optStr(*slug),
+					Name:     optStr(*name),
+					StartAt:  startAt,
+					EndAt:    endAt,
+					Unlisted: setBool(*unlisted, set["unlisted"]),
 				}); err != nil {
 					return err
 				}
@@ -91,11 +94,12 @@ func contestCommands() []command {
 					return err
 				}
 				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-				fmt.Fprintln(w, "ID\tSLUG\tNAME\tSTART\tEND")
+				fmt.Fprintln(w, "ID\tSLUG\tNAME\tSTART\tEND\tUNLISTED")
 				for _, c := range contests {
-					fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\n", c.ID, c.Slug, c.Name,
+					fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\n", c.ID, c.Slug, c.Name,
 						time.Unix(c.StartAt, 0).Format(timeLayout),
-						time.Unix(c.EndAt, 0).Format(timeLayout))
+						time.Unix(c.EndAt, 0).Format(timeLayout),
+						c.Unlisted)
 				}
 				return w.Flush()
 			}

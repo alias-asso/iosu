@@ -31,13 +31,14 @@ func configCommands() []command {
 			title := fs.String("site-title", "", "site title")
 			main := fs.String("main-text", "", "home page main text")
 			secondary := fs.String("secondary-text", "", "home page secondary text")
-			contest := fs.String("current-contest", "", "slug of the contest the navigation links to")
+			contest := fs.String("current-contest", "", "slug of the contest the navigation links to; empty disables it")
 			return func(ctx context.Context, a *app.App) error {
+				set := wasSet(fs)
 				if err := a.UpdateSiteConfig(ctx, sqlc.UpdateSiteConfigParams{
-					SiteTitle:      optStr(*title),
-					MainText:       optStr(*main),
-					SecondaryText:  optStr(*secondary),
-					CurrentContest: optStr(*contest),
+					SiteTitle:      setStr(*title, set["site-title"]),
+					MainText:       setStr(*main, set["main-text"]),
+					SecondaryText:  setStr(*secondary, set["secondary-text"]),
+					CurrentContest: setStr(*contest, set["current-contest"]),
 				}); err != nil {
 					return err
 				}

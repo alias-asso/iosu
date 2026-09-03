@@ -2,6 +2,7 @@ package cli
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"time"
 )
@@ -21,6 +22,19 @@ func optInt(v int64) sql.NullInt64 {
 func optFloat(v float64) sql.NullFloat64 {
 	return sql.NullFloat64{Float64: v, Valid: v != 0}
 }
+
+// wasSet reports which flags actually appeared on the command line. Leaving an
+// update flag out means "leave the column alone", which is not the same as
+// passing it empty to clear the column. Only meaningful after Parse.
+func wasSet(fs *flag.FlagSet) map[string]bool {
+	set := make(map[string]bool)
+	fs.Visit(func(f *flag.Flag) { set[f.Name] = true })
+	return set
+}
+
+func setStr(v string, ok bool) sql.NullString { return sql.NullString{String: v, Valid: ok} }
+
+func setBool(v, ok bool) sql.NullBool { return sql.NullBool{Bool: v, Valid: ok} }
 
 const timeLayout = "2006-01-02 15:04:05"
 

@@ -1,0 +1,15 @@
+{{ define "archive-list" }}
+<article class="article__container grid">
+  {{ range . }}
+  <article>
+    <h3>{{ .Contest.Name }}</h3>
+    <p class="subtitle">{{ .Status }}</p>
+    <div class="btns">
+      <a href="/contest/{{ .Contest.Slug }}/" class="btn">Voir le concours</a>
+    </div>
+  </article>
+  {{ else }}
+  <p>Aucun concours n'est disponible pour le moment.</p>
+  {{ end }}
+</article>
+{{ end }}

@@ -12,6 +12,7 @@ func (s *Server) routes() {
 	s.mux.Handle("GET /static/", http.StripPrefix("/static", http.FileServer(http.FS(static))))
 
 	s.mux.HandleFunc("GET /{$}", s.optionalAuth(s.getIndex))
+	s.mux.HandleFunc("GET /archive", s.optionalAuth(s.getArchive))
 
 	s.mux.HandleFunc("GET /login", s.optionalAuth(s.getLogin))
 	s.mux.HandleFunc("POST /login", s.postLogin)

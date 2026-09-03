@@ -1,0 +1,13 @@
+{{ define "heading" }}
+<div class="content">
+  <h2>Archives</h2>
+  <p>
+    Les concours passés restent accessibles ici.
+  </p>
+</div>
+{{ end }}
+{{ define "content" }}
+<main class="larger">
+  {{ template "archive-list" .Page }}
+</main>
+{{ end }}

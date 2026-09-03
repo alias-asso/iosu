@@ -9,8 +9,45 @@ import (
 	"github.com/alias-asso/iosu/internal/app"
 )
 
+type indexPage struct {
+	Contest *app.Contest       // nil when no contest is active
+	Archive []app.ArchiveEntry // only loaded when Contest is nil
+}
+
 func (s *Server) getIndex(w http.ResponseWriter, r *http.Request) {
-	s.render(w, r, "index", nil)
+	config, err := s.app.SiteConfig(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+
+	var page indexPage
+	if slug := config.CurrentContest; slug != "" {
+		contest, err := s.app.Contest(r.Context(), slug)
+		if err != nil {
+			// A stale slug must not take the home page down; fall back to
+			// the archive as though no contest were active.
+			log.Printf("current contest %q: %v", slug, err)
+		} else {
+			page.Contest = &contest
+		}
+	}
+	if page.Contest == nil {
+		if page.Archive, err = s.app.Archive(r.Context()); err != nil {
+			s.renderError(w, r, err)
+			return
+		}
+	}
+	s.renderWith(w, r, "index", page, config)
+}
+
+func (s *Server) getArchive(w http.ResponseWriter, r *http.Request) {
+	entries, err := s.app.Archive(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	s.render(w, r, "archive", entries)
 }
 
 // markdownPage renders one of the editable static pages.

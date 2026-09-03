@@ -1,7 +1,7 @@
 {{ define "heading" }}
 <div class="content grid">
   <div>
-    <h2>Compétition de programmation</h2>
+    <h2>{{ with .Page.Contest }}{{ .Name }}{{ else }}Compétition de programmation{{ end }}</h2>
     <p>
       {{ .Config.MainText }}
     </p>
@@ -14,8 +14,17 @@
   <h3>Comment participer ?</h3>
     {{ .Config.SecondaryText }}
   <div class="btns btns--center">
+    {{ if not .LoggedIn }}
     <a href="/login" class="btn">Se connecter</a>
-    <a href="/contest/{{ .Config.CurrentContest }}/" class="btn">Accéder au concours</a>
+    {{ end }}
+    {{ with .Page.Contest }}
+    <a href="/contest/{{ .Slug }}/" class="btn">Accéder au concours</a>
+    {{ end }}
   </div>
+
+  {{ if not .Page.Contest }}
+  <h3>Rejouer les anciens concours</h3>
+  {{ template "archive-list" .Page.Archive }}
+  {{ end }}
 </main>
 {{ end }}
