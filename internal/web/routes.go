@@ -34,4 +34,10 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /rules", s.optionalAuth(s.markdownPage(func(c app.SiteConfig) string { return c.RulesContent })))
 	s.mux.HandleFunc("GET /legal", s.optionalAuth(s.markdownPage(func(c app.SiteConfig) string { return c.LegalContent })))
 	s.mux.HandleFunc("GET /credits", s.optionalAuth(s.markdownPage(func(c app.SiteConfig) string { return c.CreditsContent })))
+
+	// Admin pages
+	s.mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin/config", http.StatusFound)
+	})
+	s.mux.HandleFunc("GET /admin/config", s.requireAdmin(s.getAdminConfig))
 }

@@ -50,7 +50,6 @@ func (s *Server) getArchive(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "archive", entries)
 }
 
-// markdownPage renders one of the editable static pages.
 func (s *Server) markdownPage(pick func(app.SiteConfig) string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		config, err := s.app.SiteConfig(r.Context())
@@ -267,4 +266,7 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		MaxPart: part == detail.Problem.Parts,
 	})
+}
+
+func (s *Server) getAdminConfig(w http.ResponseWriter, r *http.Request) {
 }

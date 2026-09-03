@@ -1,0 +1,17 @@
+{{ define "base" }}
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Administration — {{ .Config.SiteTitle }}</title>
+        <link href="/static/reset.css" rel="stylesheet" />
+        <link href="/static/style.css" rel="stylesheet" />
+    </head>
+    <body class="admin">
+        {{ template "sidebar" . }}
+        {{ template "content" . }}
+        <script src="/static/js/htmx.min.js"></script>
+    </body>
+</html>
+{{ end }}

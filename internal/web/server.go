@@ -57,33 +57,31 @@ func (s *Server) Start(port string) error {
 	return srv.ListenAndServe()
 }
 
-// parseTemplates builds one template set per page, each combining the layout
-// and the shared partials.
 func parseTemplates() (map[string]*template.Template, error) {
-	pages, err := fs.Glob(content, "views/pages/*.gohtml")
-	if err != nil {
-		return nil, err
-	}
-	shared, err := fs.Glob(content, "views/partials/*.gohtml")
-	if err != nil {
-		return nil, err
-	}
-	shared = append(shared, "views/layout/base.gohtml")
-
-	out := make(map[string]*template.Template, len(pages)+1)
-	for _, page := range pages {
-		files := append(append([]string{}, shared...), page)
-		tpl, err := template.ParseFS(content, files...)
-		if err != nil {
-			return nil, fmt.Errorf("parsing %s: %w", page, err)
-		}
-		out[name(page)] = tpl
-	}
-
 	partials, err := fs.Glob(content, "views/partials/*.gohtml")
 	if err != nil {
 		return nil, err
 	}
+
+	out := make(map[string]*template.Template)
+	for _, l := range []struct{ pages, layout string }{
+		{"views/pages/*.gohtml", "views/layout/base.gohtml"},
+		{"views/pages/admin/*.gohtml", "views/layout/admin.gohtml"},
+	} {
+		pages, err := fs.Glob(content, l.pages)
+		if err != nil {
+			return nil, err
+		}
+		for _, page := range pages {
+			files := append(append([]string{}, partials...), l.layout, page)
+			tpl, err := template.ParseFS(content, files...)
+			if err != nil {
+				return nil, fmt.Errorf("parsing %s: %w", page, err)
+			}
+			out[name(page)] = tpl
+		}
+	}
+
 	for _, p := range partials {
 		tpl, err := template.ParseFS(content, p)
 		if err != nil {
