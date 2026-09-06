@@ -11,8 +11,8 @@ import (
 )
 
 const createContest = `-- name: CreateContest :one
-INSERT INTO contests (slug, name, description, start_at, end_at)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO contests (slug, name, description, start_at, end_at, unlisted)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING id, slug, name, description, start_at, end_at, unlisted
 `
 
@@ -22,6 +22,7 @@ type CreateContestParams struct {
 	Description string
 	StartAt     int64
 	EndAt       int64
+	Unlisted    bool
 }
 
 func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (Contest, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (C
 		arg.Description,
 		arg.StartAt,
 		arg.EndAt,
+		arg.Unlisted,
 	)
 	var i Contest
 	err := row.Scan(
@@ -43,6 +45,18 @@ func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (C
 		&i.Unlisted,
 	)
 	return i, err
+}
+
+const deleteContest = `-- name: DeleteContest :execrows
+DELETE FROM contests WHERE id = ?
+`
+
+func (q *Queries) DeleteContest(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteContest, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 const getContest = `-- name: GetContest :one

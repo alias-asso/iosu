@@ -1,0 +1,24 @@
+{{ define "content" }}
+<main class="larger">
+	<h1>Concours</h1>
+	<div class="btns">
+		<a class="btn btn--large" href="/admin/contests/new">Nouveau concours</a>
+	</div>
+	<section class="article__container admin-contest-list">
+		{{ range .Page }}
+		<article class="admin-contest-list__item">
+			<div>
+				<h3>{{ .Name }}</h3>
+				<p class="subtitle">{{ if .Unlisted }}Non listé{{ else }}Listé{{ end }}</p>
+			</div>
+			<div class="btns btns--no-marge admin-contest-list__actions">
+				<a class="btn" href="/admin/contests/{{ .Slug }}/edit">Modifier</a>
+				<a class="btn btn--danger" href="/admin/contests/{{ .Slug }}/delete">Supprimer</a>
+			</div>
+		</article>
+		{{ else }}
+		<p>Aucun concours n'a été créé.</p>
+		{{ end }}
+	</section>
+</main>
+{{ end }}

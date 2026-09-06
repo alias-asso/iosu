@@ -1,2 +1,29 @@
 {{ define "content" }}
+<main>
+	<h1>Configuration générale</h1>
+	<form method="post" action="/admin/config" class="larger">
+		<label for="site-title">Titre du site</label>
+		<input id="site-title" name="site-title" value="{{ .Config.SiteTitle }}">
+		<label for="main-text">Texte principal</label>
+		<textarea id="main-text" name="main-text">{{ .Config.MainText }}</textarea>
+		<label for="secondary-text">Texte secondaire</label>
+		<textarea id="secondary-text" name="secondary-text">{{ .Config.SecondaryText }}</textarea>
+		<label for="current-contest">Concours actuel</label>
+		<select id="current-contest" name="current-contest">
+			<option value=""{{ if not .Config.CurrentContest }} selected{{ end }}>Aucun concours</option>
+			{{ range .Page.Contests }}
+			<option value="{{ .Slug }}"{{ if eq .Slug $.Config.CurrentContest }} selected{{ end }}>{{ .Name }}</option>
+			{{ end }}
+		</select>
+		<label for="rules-content">Page "règles"</label>
+		<textarea id="rules-content" name="rules-content">{{ .Config.RulesContent }}</textarea>
+		<label for="help-content">Page "aide"</label>
+		<textarea id="help-content" name="help-content">{{ .Config.HelpContent }}</textarea>
+		<label for="legal-content">Page "mentions légales"</label>
+		<textarea id="legal-content" name="legal-content">{{ .Config.LegalContent }}</textarea>
+		<label for="credits-content">Page "crédits"</label>
+		<textarea id="credits-content" name="credits-content">{{ .Config.CreditsContent }}</textarea>
+		<button class="btn" type="submit">Mettre à jour</button>
+	</form>
+</main>
 {{ end }}

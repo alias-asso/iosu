@@ -1,6 +1,6 @@
 -- name: CreateContest :one
-INSERT INTO contests (slug, name, description, start_at, end_at)
-VALUES (?, ?, ?, ?, ?)
+INSERT INTO contests (slug, name, description, start_at, end_at, unlisted)
+VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetContest :one
@@ -24,3 +24,6 @@ UPDATE contests SET
     start_at    = COALESCE(sqlc.narg('start_at'), start_at),
     end_at      = COALESCE(sqlc.narg('end_at'), end_at)
 WHERE id = sqlc.arg('id');
+
+-- name: DeleteContest :execrows
+DELETE FROM contests WHERE id = ?;

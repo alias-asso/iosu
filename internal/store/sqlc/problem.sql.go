@@ -170,6 +170,33 @@ func (q *Queries) GetSolvedParts(ctx context.Context, arg GetSolvedPartsParams) 
 	return column_1, err
 }
 
+const listDifficulties = `-- name: ListDifficulties :many
+SELECT id, name, points FROM difficulties ORDER BY points, name
+`
+
+func (q *Queries) ListDifficulties(ctx context.Context) ([]Difficulty, error) {
+	rows, err := q.db.QueryContext(ctx, listDifficulties)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Difficulty{}
+	for rows.Next() {
+		var i Difficulty
+		if err := rows.Scan(&i.ID, &i.Name, &i.Points); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProblemsByContest = `-- name: ListProblemsByContest :many
 SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, difficulties.id, difficulties.name, difficulties.points
 FROM problems

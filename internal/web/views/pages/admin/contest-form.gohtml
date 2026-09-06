@@ -1,0 +1,39 @@
+{{ define "content" }}
+<main>
+	<h1>{{ .Page.Title }}</h1>
+	{{ if .Page.Error }}
+	<div class="response response--danger">
+		<p>{{ .Page.Error }}</p>
+	</div>
+	{{ end }}
+	<form method="post" action="{{ .Page.Action }}" class="larger">
+		<div>
+			<label for="slug">Identifiant</label>
+			<input id="slug" name="slug" value="{{ .Page.Slug }}" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="70" required>
+		</div>
+		<div>
+			<label for="name">Nom</label>
+			<input id="name" name="name" value="{{ .Page.Name }}" maxlength="70" required>
+		</div>
+		<div>
+			<label for="description">Description</label>
+			<textarea id="description" name="description">{{ .Page.Description }}</textarea>
+		</div>
+		<div class="form--reverse">
+			<div>
+				<label for="start-at">Début</label>
+				<input id="start-at" name="start-at" type="datetime-local" value="{{ .Page.StartAt }}" required>
+			</div>
+			<div>
+				<label for="end-at">Fin</label>
+				<input id="end-at" name="end-at" type="datetime-local" value="{{ .Page.EndAt }}" required>
+			</div>
+		</div>
+		<label class="form--checkbox" for="unlisted">
+			<input id="unlisted" name="unlisted" type="checkbox"{{ if .Page.Unlisted }} checked{{ end }}>
+			Ne pas afficher ce concours dans les archives
+		</label>
+		<button class="btn" type="submit">{{ .Page.Submit }}</button>
+	</form>
+</main>
+{{ end }}

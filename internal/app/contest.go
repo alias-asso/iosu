@@ -25,16 +25,18 @@ type ArchiveEntry struct {
 }
 
 type CreateContestInput struct {
-	Slug      string
-	Name      string
-	StartTime time.Time
-	EndTime   time.Time
+	Slug        string
+	Name        string
+	Description string
+	StartTime   time.Time
+	EndTime     time.Time
+	Unlisted    bool
 }
 
 // CreateContest records a contest and creates its directory under the data
 // directory.
 func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest, error) {
-	if !validSlug(in.Slug) {
+	if in.Slug == "new" || !validSlug(in.Slug) {
 		return Contest{}, ErrInvalidSlug
 	}
 	if in.Name == "" || len(in.Name) > maxNameLen {
@@ -45,10 +47,12 @@ func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest
 	}
 
 	contest, err := a.store.CreateContest(ctx, sqlc.CreateContestParams{
-		Slug:    in.Slug,
-		Name:    in.Name,
-		StartAt: in.StartTime.Unix(),
-		EndAt:   in.EndTime.Unix(),
+		Slug:        in.Slug,
+		Name:        in.Name,
+		Description: in.Description,
+		StartAt:     in.StartTime.Unix(),
+		EndAt:       in.EndTime.Unix(),
+		Unlisted:    in.Unlisted,
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -79,7 +83,7 @@ func (a *App) Contests(ctx context.Context) ([]Contest, error) {
 
 // UpdateContest applies the non-nil fields of in to an existing contest.
 func (a *App) UpdateContest(ctx context.Context, in sqlc.UpdateContestParams) error {
-	if in.Slug.Valid && !validSlug(in.Slug.String) {
+	if in.Slug.Valid && (in.Slug.String == "new" || !validSlug(in.Slug.String)) {
 		return ErrInvalidSlug
 	}
 	if in.Name.Valid && (in.Name.String == "" || len(in.Name.String) > maxNameLen) {
@@ -100,6 +104,46 @@ func (a *App) UpdateContest(ctx context.Context, in sqlc.UpdateContestParams) er
 		return ErrContestNotFound
 	}
 	return nil
+}
+
+func (a *App) DeleteContest(ctx context.Context, slug string) error {
+	return a.store.Tx(ctx, func(q *sqlc.Queries) error {
+		contest, err := q.GetContestBySlug(ctx, slug)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrContestNotFound
+		}
+		if err != nil {
+			return err
+		}
+
+		problems, err := q.ListProblemsByContest(ctx, contest.ID)
+		if err != nil {
+			return err
+		}
+		if len(problems) != 0 {
+			return ErrContestNotEmpty
+		}
+
+		config, err := q.GetSiteConfig(ctx)
+		if err == nil && config.CurrentContest == slug {
+			if err := q.UpdateSiteConfig(ctx, sqlc.UpdateSiteConfigParams{
+				CurrentContest: sql.NullString{String: "", Valid: true},
+			}); err != nil {
+				return err
+			}
+		} else if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+
+		n, err := q.DeleteContest(ctx, contest.ID)
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrContestNotFound
+		}
+		return nil
+	})
 }
 
 func (a *App) Archive(ctx context.Context) ([]ArchiveEntry, error) {

@@ -4,6 +4,9 @@ INSERT INTO difficulties (name, points) VALUES (?, ?) RETURNING *;
 -- name: GetDifficultyByName :one
 SELECT * FROM difficulties WHERE name = ?;
 
+-- name: ListDifficulties :many
+SELECT * FROM difficulties ORDER BY points, name;
+
 -- name: CreateProblem :one
 INSERT INTO problems (contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)

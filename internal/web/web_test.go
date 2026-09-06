@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -101,6 +102,16 @@ func (ts *testServer) user(username string) app.User {
 	return u
 }
 
+func (ts *testServer) admin(username string) app.User {
+	ts.t.Helper()
+	u := ts.user(username)
+	if err := ts.app.SetAdmin(ts.t.Context(), username, true); err != nil {
+		ts.t.Fatalf("granting admin rights to %s: %v", username, err)
+	}
+	u.Admin = true
+	return u
+}
+
 // do runs a request through the full handler chain.
 func (ts *testServer) do(req *http.Request, as *app.User) *httptest.ResponseRecorder {
 	ts.t.Helper()
@@ -155,6 +166,96 @@ func TestPublicRoutesAreReachableAnonymously(t *testing.T) {
 				t.Fatalf("status %d, want 200", rec.Code)
 			}
 		})
+	}
+}
+
+func TestAdminDifficultySelectorCreatesAndSelectsDifficulty(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/difficulties", &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("difficulty selector status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{"facile (10 points)", `hx-post="/admin/difficulties"`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("difficulty selector does not contain %q", want)
+		}
+	}
+
+	rec = ts.postForm("/admin/difficulties", url.Values{
+		"name": {"moyen"}, "points": {"20"},
+	}, &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("create difficulty status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{"facile (10 points)", "moyen (20 points)", `<option value="moyen" selected>`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("updated selector does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+}
+
+func TestAdminConfigUpdatesAndClearsCurrentContest(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/config", &admin)
+	for _, want := range []string{`name="current-contest"`, `value="alpha"`, "Aucun concours"} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("config page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	for _, slug := range []string{"alpha", ""} {
+		rec = ts.postForm("/admin/config", url.Values{"current-contest": {slug}}, &admin)
+		if rec.Code != http.StatusSeeOther {
+			t.Fatalf("setting current contest to %q: status %d, want 303", slug, rec.Code)
+		}
+		config, err := ts.app.SiteConfig(t.Context())
+		if err != nil {
+			t.Fatalf("reading config: %v", err)
+		}
+		if config.CurrentContest != slug {
+			t.Errorf("current contest is %q, want %q", config.CurrentContest, slug)
+		}
+	}
+}
+
+func TestAdminDifficultySelectorShowsValidationErrors(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.postForm("/admin/difficulties", url.Values{
+		"name": {"moyen"}, "points": {"beaucoup"},
+	}, &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("invalid difficulty status %d, want 200 for an htmx swap", rec.Code)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "Nombre de points invalide") || !strings.Contains(body, "facile") {
+		t.Fatalf("validation response does not contain the error and current list: %s", body)
+	}
+
+	rec = ts.postForm("/admin/difficulties", url.Values{
+		"name": {"facile"}, "points": {"10"},
+	}, &admin)
+	if !strings.Contains(rec.Body.String(), "Cette difficulté existe déjà") {
+		t.Fatalf("duplicate response does not explain the conflict: %s", rec.Body.String())
+	}
+}
+
+func TestAdminDifficultyRoutesRejectNonAdmins(t *testing.T) {
+	ts := newTestServer(t)
+	user := ts.user("alice")
+
+	for _, req := range []*http.Request{
+		httptest.NewRequest(http.MethodGet, "/admin/difficulties", nil),
+		httptest.NewRequest(http.MethodPost, "/admin/difficulties", nil),
+	} {
+		rec := ts.do(req, &user)
+		if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/" {
+			t.Errorf("%s: status %d and location %q, want redirect to /", req.Method, rec.Code, rec.Header().Get("Location"))
+		}
 	}
 }
 
@@ -308,6 +409,158 @@ func TestTokenSignedWithAnotherKeyIsRejected(t *testing.T) {
 	ts.Handler().ServeHTTP(rec, req)
 	if rec.Code != http.StatusSeeOther {
 		t.Fatalf("status %d, want a redirect: a token signed with another key must not authenticate", rec.Code)
+	}
+}
+
+func TestAdminContestsListsAllContests(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	contest, err := ts.app.Contest(t.Context(), "alpha")
+	if err != nil {
+		t.Fatalf("loading contest: %v", err)
+	}
+	if err := ts.app.UpdateContest(t.Context(), sqlc.UpdateContestParams{
+		ID:       contest.ID,
+		Unlisted: sql.NullBool{Bool: true, Valid: true},
+	}); err != nil {
+		t.Fatalf("unlisting contest: %v", err)
+	}
+
+	rec := ts.get("/admin/contests", &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{
+		"Alpha",
+		"Non listé",
+		`href="/admin/contests/new"`,
+		`href="/admin/contests/alpha/edit"`,
+		`href="/admin/contests/alpha/delete"`,
+		"Supprimer",
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("contest page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+}
+
+func TestAdminContestDeleteRequiresConfirmationAndKeepsProblems(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/contests/alpha/delete", &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("confirmation status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{
+		"Voulez-vous vraiment supprimer le concours « Alpha » ?",
+		`action="/admin/contests/alpha/delete"`,
+		"Confirmer la suppression",
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("confirmation page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	rec = ts.postForm("/admin/contests/alpha/delete", nil, &admin)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("deleting non-empty contest: status %d, want 409", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Ce concours contient encore des problèmes") {
+		t.Fatalf("deletion error is not explained: %s", rec.Body.String())
+	}
+	if _, err := ts.app.Problem(t.Context(), "one"); err != nil {
+		t.Fatalf("problem was deleted: %v", err)
+	}
+
+	start := time.Now().Add(time.Hour)
+	if _, err := ts.app.CreateContest(t.Context(), app.CreateContestInput{
+		Slug: "beta", Name: "Beta", StartTime: start, EndTime: start.Add(time.Hour),
+	}); err != nil {
+		t.Fatalf("creating empty contest: %v", err)
+	}
+	rec = ts.postForm("/admin/contests/beta/delete", nil, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/contests" {
+		t.Fatalf("deleting empty contest: status %d, location %q", rec.Code, rec.Header().Get("Location"))
+	}
+	if _, err := ts.app.Contest(t.Context(), "beta"); !errors.Is(err, app.ErrContestNotFound) {
+		t.Fatalf("loading deleted contest: got %v, want ErrContestNotFound", err)
+	}
+}
+
+func TestAdminContestCreateAndEdit(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	start := time.Now().Add(time.Hour).Truncate(time.Minute)
+	end := start.Add(2 * time.Hour)
+
+	rec := ts.get("/admin/contests/new", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `action="/admin/contests/new"`) {
+		t.Fatalf("new contest form is not available: status %d, body %s", rec.Code, rec.Body.String())
+	}
+
+	rec = ts.postForm("/admin/contests/new", url.Values{
+		"slug":        {"beta"},
+		"name":        {"Beta"},
+		"description": {"Description de Beta"},
+		"start-at":    {start.Format(adminContestTimeLayout)},
+		"end-at":      {end.Format(adminContestTimeLayout)},
+		"unlisted":    {"on"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/contests" {
+		t.Fatalf("creating contest: status %d, location %q", rec.Code, rec.Header().Get("Location"))
+	}
+	contest, err := ts.app.Contest(t.Context(), "beta")
+	if err != nil {
+		t.Fatalf("loading created contest: %v", err)
+	}
+	if contest.Description != "Description de Beta" || !contest.Unlisted {
+		t.Errorf("created contest is not populated: %+v", contest)
+	}
+
+	rec = ts.get("/admin/contests/beta/edit", &admin)
+	for _, want := range []string{`value="beta"`, `value="Beta"`, "Description de Beta", " checked"} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("edit form does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	rec = ts.postForm("/admin/contests/beta/edit", url.Values{
+		"slug":        {"beta"},
+		"name":        {"Beta modifié"},
+		"description": {"Nouvelle description"},
+		"start-at":    {start.Format(adminContestTimeLayout)},
+		"end-at":      {end.Add(time.Hour).Format(adminContestTimeLayout)},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("editing contest: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	contest, err = ts.app.Contest(t.Context(), "beta")
+	if err != nil {
+		t.Fatalf("loading edited contest: %v", err)
+	}
+	if contest.Name != "Beta modifié" || contest.Description != "Nouvelle description" || contest.Unlisted {
+		t.Errorf("edited contest is not populated: %+v", contest)
+	}
+}
+
+func TestAdminContestRejectsReservedSlug(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	start := time.Now().Truncate(time.Minute)
+
+	rec := ts.postForm("/admin/contests/new", url.Values{
+		"slug":     {"new"},
+		"name":     {"New"},
+		"start-at": {start.Format(adminContestTimeLayout)},
+		"end-at":   {start.Add(time.Hour).Format(adminContestTimeLayout)},
+	}, &admin)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status %d, want 400", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Identifiant invalide") {
+		t.Fatalf("form does not explain the reserved slug: %s", rec.Body.String())
 	}
 }
 

@@ -108,3 +108,62 @@ func TestUpdateSiteConfigChecksTheCurrentContest(t *testing.T) {
 		t.Errorf("current contest not cleared: %q", config.CurrentContest)
 	}
 }
+
+func TestUpdateContestRejectsReservedSlug(t *testing.T) {
+	f := newFixture(t)
+	contest := f.contest("alpha")
+	err := f.UpdateContest(f.ctx(), sqlc.UpdateContestParams{
+		ID:   contest.ID,
+		Slug: sql.NullString{String: "new", Valid: true},
+	})
+	if !errors.Is(err, ErrInvalidSlug) {
+		t.Fatalf("got %v, want ErrInvalidSlug", err)
+	}
+}
+
+func TestDeleteContest(t *testing.T) {
+	f := newFixture(t)
+	contest := f.contest("alpha")
+	if _, err := f.EnsureSiteConfig(f.ctx()); err != nil {
+		t.Fatalf("site config: %v", err)
+	}
+	if err := f.UpdateSiteConfig(f.ctx(), sqlc.UpdateSiteConfigParams{
+		CurrentContest: sql.NullString{String: contest.Slug, Valid: true},
+	}); err != nil {
+		t.Fatalf("setting current contest: %v", err)
+	}
+
+	if err := f.DeleteContest(f.ctx(), contest.Slug); err != nil {
+		t.Fatalf("deleting contest: %v", err)
+	}
+	if _, err := f.Contest(f.ctx(), contest.Slug); !errors.Is(err, ErrContestNotFound) {
+		t.Fatalf("loading deleted contest: got %v, want ErrContestNotFound", err)
+	}
+	config, err := f.SiteConfig(f.ctx())
+	if err != nil {
+		t.Fatalf("site config: %v", err)
+	}
+	if config.CurrentContest != "" {
+		t.Errorf("current contest is %q after deletion, want empty", config.CurrentContest)
+	}
+	if err := f.DeleteContest(f.ctx(), contest.Slug); !errors.Is(err, ErrContestNotFound) {
+		t.Fatalf("deleting missing contest: got %v, want ErrContestNotFound", err)
+	}
+}
+
+func TestDeleteContestKeepsItsProblems(t *testing.T) {
+	f := newFixture(t)
+	f.difficulty("facile", 10)
+	f.contest("alpha")
+	f.problem("alpha", "one", 1)
+
+	if err := f.DeleteContest(f.ctx(), "alpha"); !errors.Is(err, ErrContestNotEmpty) {
+		t.Fatalf("deleting non-empty contest: got %v, want ErrContestNotEmpty", err)
+	}
+	if _, err := f.Contest(f.ctx(), "alpha"); err != nil {
+		t.Fatalf("contest was deleted: %v", err)
+	}
+	if _, err := f.Problem(f.ctx(), "one"); err != nil {
+		t.Fatalf("problem was deleted: %v", err)
+	}
+}

@@ -1,6 +1,14 @@
 {{ define "sidebar" }}
-<div class="sidebar">
-    <nav>
-    </nav>
-</div>
+<aside class="sidebar">
+	<nav aria-label="Administration">
+		<h1><a href="/admin/config">Administration</a></h1>
+		<ul class="sidebar__links">
+			<li><a href="/admin/config">Configuration</a></li>
+			<li><a href="/admin/users">Utilisateurs</a></li>
+			<li><a href="/admin/contests">Concours</a></li>
+			<li><a href="/admin/problems">Problèmes</a></li>
+		</ul>
+		<a class="sidebar__back btn" href="/">Retour au site</a>
+	</nav>
+</aside>
 {{ end }}

@@ -1,0 +1,12 @@
+{{ define "content" }}
+<main>
+	<h1>Supprimer le concours</h1>
+	<p>Voulez-vous vraiment supprimer le concours « {{ .Page.Name }} » ?</p>
+	<div class="btns">
+		<a class="btn" href="/admin/contests">Annuler</a>
+		<form method="post" action="/admin/contests/{{ .Page.Slug }}/delete">
+			<button class="btn btn--danger" type="submit">Confirmer la suppression</button>
+		</form>
+	</div>
+</main>
+{{ end }}

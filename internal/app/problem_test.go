@@ -350,6 +350,7 @@ func TestCreateContestValidation(t *testing.T) {
 		want error
 	}{
 		{"traversal slug", CreateContestInput{Slug: "../etc", Name: "x", StartTime: now, EndTime: now}, ErrInvalidSlug},
+		{"reserved slug", CreateContestInput{Slug: "new", Name: "x", StartTime: now, EndTime: now}, ErrInvalidSlug},
 		{"empty name", CreateContestInput{Slug: "ok", Name: "", StartTime: now, EndTime: now}, ErrInvalidName},
 		{"end before start", CreateContestInput{Slug: "ok", Name: "x", StartTime: now, EndTime: now.Add(-time.Hour)}, ErrInvalidTimeRange},
 	}

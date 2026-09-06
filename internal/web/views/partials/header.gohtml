@@ -12,6 +12,9 @@
       <li><a href="/contest/{{ .Config.CurrentContest }}/leaderboard">Classement</a></li>
       <li><a href="/contest/{{ .Config.CurrentContest }}/">Problèmes</a></li>
       {{ end }}
+      {{ if .IsAdmin }}
+      <li><a href="/admin">Administration</a></li>
+      {{ end }}
       {{ if .LoggedIn }}
       <li><a href="#" hx-post="/logout">Déconnexion</a></li>
       {{ else }}

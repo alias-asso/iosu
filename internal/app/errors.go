@@ -23,6 +23,7 @@ var (
 
 	ErrContestNotFound   = errors.New("contest not found")
 	ErrContestExists     = errors.New("contest already exists")
+	ErrContestNotEmpty   = errors.New("contest contains problems")
 	ErrContestNotStarted = errors.New("contest has not started")
 	ErrContestFinished   = errors.New("contest is over")
 	ErrInvalidTimeRange  = errors.New("end time is before start time")
@@ -30,6 +31,7 @@ var (
 	ErrProblemNotFound    = errors.New("problem not found")
 	ErrProblemExists      = errors.New("problem already exists")
 	ErrDifficultyNotFound = errors.New("difficulty not found")
+	ErrDifficultyExists   = errors.New("difficulty already exists")
 	ErrInvalidSlug        = errors.New("invalid slug")
 	ErrInvalidName        = errors.New("invalid name")
 	ErrInvalidPart        = errors.New("invalid part")

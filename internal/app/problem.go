@@ -145,7 +145,15 @@ func (a *App) CreateDifficulty(ctx context.Context, name string, points int64) e
 		return ErrInvalidName
 	}
 	_, err := a.store.CreateDifficulty(ctx, sqlc.CreateDifficultyParams{Name: name, Points: points})
+	if isUniqueViolation(err) {
+		return ErrDifficultyExists
+	}
 	return err
+}
+
+// Difficulties lists the available difficulty tiers by increasing score.
+func (a *App) Difficulties(ctx context.Context) ([]Difficulty, error) {
+	return a.store.ListDifficulties(ctx)
 }
 
 // SolvedParts is how many parts of a problem the user has completed.

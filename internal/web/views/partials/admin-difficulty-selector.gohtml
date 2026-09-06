@@ -1,0 +1,31 @@
+{{ define "admin-difficulty-selector" }}
+<section id="admin-difficulty-selector">
+  <h2>Difficulté</h2>
+  <label for="difficulty">Difficultés disponibles</label>
+  <select id="difficulty" name="difficulty" required>
+    {{ range .Difficulties }}
+    <option value="{{ .Name }}"{{ if eq .Name $.Selected }} selected{{ end }}>{{ .Name }} ({{ .Points }} points)</option>
+    {{ else }}
+    <option value="" disabled selected>Aucune difficulté disponible</option>
+    {{ end }}
+  </select>
+
+  <form hx-post="/admin/difficulties" hx-target="#admin-difficulty-selector" hx-swap="outerHTML">
+    <div>
+      <label for="difficulty-name">Nom</label>
+      <input id="difficulty-name" name="name" maxlength="20" required />
+    </div>
+    <div>
+      <label for="difficulty-points">Points</label>
+      <input id="difficulty-points" name="points" type="number" required />
+    </div>
+    <button class="btn" type="submit">Ajouter</button>
+  </form>
+  {{ if .Error }}
+  <div class="response response--danger">
+    <p>{{ .Error }}</p>
+  </div>
+  {{ end }}
+</section>
+{{ end }}
+{{ template "admin-difficulty-selector" . }}

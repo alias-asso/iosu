@@ -95,14 +95,20 @@ var messages = map[error]struct {
 	app.ErrActivationCodeUsed:    {"Ce code d'activation a déjà été utilisé.", http.StatusBadRequest},
 
 	app.ErrContestNotFound:   {"Concours introuvable.", http.StatusNotFound},
+	app.ErrContestExists:     {"Un concours utilise déjà cet identifiant.", http.StatusConflict},
+	app.ErrContestNotEmpty:   {"Ce concours contient encore des problèmes.", http.StatusConflict},
 	app.ErrContestNotStarted: {"Le concours n'a pas encore commencé.", http.StatusForbidden},
 	app.ErrContestFinished:   {"Le concours est terminé.", http.StatusForbidden},
+	app.ErrInvalidTimeRange:  {"La date de fin doit être postérieure à la date de début.", http.StatusBadRequest},
 
-	app.ErrProblemNotFound: {"Problème introuvable.", http.StatusNotFound},
-	app.ErrInvalidPart:     {"Cette partie n'est pas accessible.", http.StatusBadRequest},
-	app.ErrAlreadySolved:   {"Vous avez déjà résolu cette partie.", http.StatusBadRequest},
-	app.ErrInputNotFound:   {"Aucun input n'a été généré pour vous sur ce problème.", http.StatusNotFound},
-	app.ErrOutputNotFound:  {"Aucune réponse attendue n'est enregistrée pour vous sur ce problème.", http.StatusNotFound},
+	app.ErrProblemNotFound:  {"Problème introuvable.", http.StatusNotFound},
+	app.ErrDifficultyExists: {"Cette difficulté existe déjà.", http.StatusConflict},
+	app.ErrInvalidSlug:      {"Identifiant invalide.", http.StatusBadRequest},
+	app.ErrInvalidName:      {"Nom invalide.", http.StatusBadRequest},
+	app.ErrInvalidPart:      {"Cette partie n'est pas accessible.", http.StatusBadRequest},
+	app.ErrAlreadySolved:    {"Vous avez déjà résolu cette partie.", http.StatusBadRequest},
+	app.ErrInputNotFound:    {"Aucun input n'a été généré pour vous sur ce problème.", http.StatusNotFound},
+	app.ErrOutputNotFound:   {"Aucune réponse attendue n'est enregistrée pour vous sur ce problème.", http.StatusNotFound},
 }
 
 func describe(err error) (string, int) {
