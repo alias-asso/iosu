@@ -69,6 +69,18 @@ func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (P
 	return i, err
 }
 
+const deleteProblem = `-- name: DeleteProblem :execrows
+DELETE FROM problems WHERE id = ?
+`
+
+func (q *Queries) DeleteProblem(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteProblem, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const getDifficultyByName = `-- name: GetDifficultyByName :one
 SELECT id, name, points FROM difficulties WHERE name = ?
 `
@@ -253,8 +265,9 @@ UPDATE problems SET
     author            = COALESCE(?3, author),
     parts             = COALESCE(?4, parts),
     points_multiplier = COALESCE(?5, points_multiplier),
-    points_adder      = COALESCE(?6, points_adder)
-WHERE id = ?7
+    points_adder      = COALESCE(?6, points_adder),
+    difficulty_id     = COALESCE(?7, difficulty_id)
+WHERE id = ?8
 `
 
 type UpdateProblemParams struct {
@@ -264,6 +277,7 @@ type UpdateProblemParams struct {
 	Parts            sql.NullInt64
 	PointsMultiplier sql.NullFloat64
 	PointsAdder      sql.NullInt64
+	DifficultyID     sql.NullInt64
 	ID               int64
 }
 
@@ -275,6 +289,7 @@ func (q *Queries) UpdateProblem(ctx context.Context, arg UpdateProblemParams) (i
 		arg.Parts,
 		arg.PointsMultiplier,
 		arg.PointsAdder,
+		arg.DifficultyID,
 		arg.ID,
 	)
 	if err != nil {

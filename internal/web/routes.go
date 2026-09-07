@@ -61,6 +61,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/contests/{contest}/edit", s.requireAdmin(s.postAdminContestEdit))
 	s.mux.HandleFunc("GET /admin/contests/{contest}/delete", s.requireAdmin(s.getAdminContestDelete))
 	s.mux.HandleFunc("POST /admin/contests/{contest}/delete", s.requireAdmin(s.postAdminContestDelete))
+	s.mux.HandleFunc("GET /admin/problems", s.requireAdmin(s.getAdminProblems))
+	s.mux.HandleFunc("GET /admin/problems/new", s.requireAdmin(s.getAdminProblemNew))
+	s.mux.HandleFunc("POST /admin/problems/new", s.requireAdmin(s.postAdminProblemNew))
+	s.mux.HandleFunc("GET /admin/problems/{problem}/edit", s.requireAdmin(s.getAdminProblemEdit))
+	s.mux.HandleFunc("POST /admin/problems/{problem}/edit", s.requireAdmin(s.postAdminProblemEdit))
+	s.mux.HandleFunc("GET /admin/problems/{problem}/delete", s.requireAdmin(s.getAdminProblemDelete))
+	s.mux.HandleFunc("POST /admin/problems/{problem}/delete", s.requireAdmin(s.postAdminProblemDelete))
 	s.mux.HandleFunc("GET /admin/difficulties", s.requireAdmin(s.getAdminDifficultySelector))
 	s.mux.HandleFunc("POST /admin/difficulties", s.requireAdmin(s.postAdminDifficulty))
 }

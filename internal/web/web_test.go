@@ -674,6 +674,105 @@ func TestAdminUserPromotionAndDeletionRequireConfirmation(t *testing.T) {
 	}
 }
 
+func TestAdminProblemsListsMarkdownFilesByContest(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	if err := os.Remove(filepath.Join(ts.cfg.DataDir, "alpha", "one", "part2.md")); err != nil {
+		t.Fatalf("remove second part: %v", err)
+	}
+	start := time.Now().Add(time.Hour)
+	if _, err := ts.app.CreateContest(t.Context(), app.CreateContestInput{
+		Slug: "beta", Name: "Beta", StartTime: start, EndTime: start.Add(time.Hour),
+	}); err != nil {
+		t.Fatalf("create second contest: %v", err)
+	}
+
+	rec := ts.get("/admin/problems", &admin)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{
+		"Problèmes", "Alpha", "Beta", "One", "2 parties",
+		"Partie 1 : fichier Markdown présent",
+		"Partie 2 : fichier Markdown manquant",
+		`href="/admin/problems/new"`,
+		`href="/admin/problems/one/edit"`,
+		`href="/admin/problems/one/delete"`,
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("problem page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+}
+
+func TestAdminProblemCreateEditAndDelete(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/problems/new", &admin)
+	for _, want := range []string{
+		`action="/admin/problems/new"`,
+		`name="contest"`,
+		`value="alpha"`,
+		`name="difficulty" form="admin-problem-form"`,
+		`hx-post="/admin/difficulties"`,
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("new problem form does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	rec = ts.postForm("/admin/problems/new", url.Values{
+		"contest":           {"alpha"},
+		"slug":              {"two"},
+		"name":              {"Deuxième problème"},
+		"author":            {"Alice"},
+		"parts":             {"3"},
+		"points-multiplier": {"1.5"},
+		"points-adder":      {"2"},
+		"difficulty":        {"facile"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/problems" {
+		t.Fatalf("create problem: status %d, location %q, body %s", rec.Code, rec.Header().Get("Location"), rec.Body.String())
+	}
+	problem, err := ts.app.Problem(t.Context(), "two")
+	if err != nil || problem.Contest.Slug != "alpha" || problem.Problem.Parts != 3 {
+		t.Fatalf("created problem: problem=%+v err=%v", problem, err)
+	}
+	if err := ts.app.CreateDifficulty(t.Context(), "difficile", 30); err != nil {
+		t.Fatalf("create difficulty: %v", err)
+	}
+
+	rec = ts.postForm("/admin/problems/two/edit", url.Values{
+		"slug":              {"two"},
+		"name":              {"Deuxième problème modifié"},
+		"author":            {"Bob"},
+		"parts":             {"2"},
+		"points-multiplier": {"2"},
+		"points-adder":      {"5"},
+		"difficulty":        {"difficile"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("edit problem: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	problem, err = ts.app.Problem(t.Context(), "two")
+	if err != nil || problem.Problem.Name != "Deuxième problème modifié" || problem.Problem.Parts != 2 || problem.Difficulty.Name != "difficile" {
+		t.Fatalf("edited problem: problem=%+v err=%v", problem, err)
+	}
+
+	rec = ts.get("/admin/problems/two/delete", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Confirmer la suppression") {
+		t.Fatalf("delete confirmation: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	rec = ts.postForm("/admin/problems/two/delete", nil, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/problems" {
+		t.Fatalf("delete problem: status %d, location %q", rec.Code, rec.Header().Get("Location"))
+	}
+	if _, err := ts.app.Problem(t.Context(), "two"); !errors.Is(err, app.ErrProblemNotFound) {
+		t.Fatalf("load deleted problem: got %v, want ErrProblemNotFound", err)
+	}
+}
+
 func TestAdminContestDeleteRequiresConfirmationAndKeepsProblems(t *testing.T) {
 	ts := newTestServer(t)
 	admin := ts.admin("root")

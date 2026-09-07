@@ -710,6 +710,234 @@ func (s *Server) postAdminContestDelete(w http.ResponseWriter, r *http.Request) 
 	http.Redirect(w, r, "/admin/contests", http.StatusSeeOther)
 }
 
+type adminProblemListItem struct {
+	Problem    app.Problem
+	Difficulty app.Difficulty
+	PartFiles  []adminProblemPartFile
+}
+
+type adminProblemPartFile struct {
+	Number  int
+	Present bool
+}
+
+type adminProblemContest struct {
+	Contest  app.Contest
+	Problems []adminProblemListItem
+}
+
+func (s *Server) getAdminProblems(w http.ResponseWriter, r *http.Request) {
+	contests, err := s.app.Contests(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	page := make([]adminProblemContest, 0, len(contests))
+	for _, contest := range contests {
+		problems, err := s.app.ProblemsByContest(r.Context(), contest.ID)
+		if err != nil {
+			s.renderError(w, r, err)
+			return
+		}
+		section := adminProblemContest{Contest: contest, Problems: make([]adminProblemListItem, 0, len(problems))}
+		for _, problem := range problems {
+			files, err := s.app.ProblemPartFiles(contest.Slug, problem.Problem.Slug, problem.Problem.Parts)
+			if err != nil {
+				s.renderError(w, r, err)
+				return
+			}
+			item := adminProblemListItem{
+				Problem: problem.Problem, Difficulty: problem.Difficulty,
+				PartFiles: make([]adminProblemPartFile, len(files)),
+			}
+			for i, present := range files {
+				item.PartFiles[i] = adminProblemPartFile{Number: i + 1, Present: present}
+			}
+			section.Problems = append(section.Problems, item)
+		}
+		page = append(page, section)
+	}
+	s.render(w, r, "admin/problems", page)
+}
+
+type adminProblemFormPage struct {
+	Title            string
+	Action           string
+	Submit           string
+	Contests         []app.Contest
+	ContestSlug      string
+	ContestName      string
+	SelectContest    bool
+	Slug             string
+	Name             string
+	Author           string
+	Parts            string
+	PointsMultiplier string
+	PointsAdder      string
+	Difficulty       adminDifficultySelector
+	Error            string
+}
+
+func (s *Server) getAdminProblemNew(w http.ResponseWriter, r *http.Request) {
+	page := adminProblemFormPage{
+		Title: "Nouveau problème", Action: "/admin/problems/new", Submit: "Créer le problème",
+		SelectContest: true, Parts: "1", PointsMultiplier: "1", PointsAdder: "0",
+	}
+	if !s.prepareAdminProblemForm(w, r, &page) {
+		return
+	}
+	s.render(w, r, "admin/problem-form", page)
+}
+
+func (s *Server) postAdminProblemNew(w http.ResponseWriter, r *http.Request) {
+	page := adminProblemFormPage{
+		Title: "Nouveau problème", Action: "/admin/problems/new", Submit: "Créer le problème",
+		SelectContest: true,
+	}
+	s.readAdminProblemForm(r, &page)
+	parts, multiplier, adder, ok := s.parseAdminProblemForm(w, r, &page)
+	if !ok {
+		return
+	}
+	if _, err := s.app.CreateProblem(r.Context(), app.CreateProblemInput{
+		ContestSlug: page.ContestSlug, DifficultyName: page.Difficulty.Selected,
+		Slug: page.Slug, Name: page.Name, Author: page.Author, Parts: parts,
+		PointsMultiplier: multiplier, PointsAdder: adder,
+	}); err != nil {
+		s.renderAdminProblemFormError(w, r, page, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/problems", http.StatusSeeOther)
+}
+
+func (s *Server) getAdminProblemEdit(w http.ResponseWriter, r *http.Request) {
+	problem, err := s.app.Problem(r.Context(), r.PathValue("problem"))
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	page := editProblemFormPage(problem)
+	if !s.prepareAdminProblemForm(w, r, &page) {
+		return
+	}
+	s.render(w, r, "admin/problem-form", page)
+}
+
+func (s *Server) postAdminProblemEdit(w http.ResponseWriter, r *http.Request) {
+	problem, err := s.app.Problem(r.Context(), r.PathValue("problem"))
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	page := editProblemFormPage(problem)
+	s.readAdminProblemForm(r, &page)
+	page.Slug = problem.Problem.Slug
+	parts, multiplier, adder, ok := s.parseAdminProblemForm(w, r, &page)
+	if !ok {
+		return
+	}
+	err = s.app.UpdateProblemDifficulty(r.Context(), sqlc.UpdateProblemParams{
+		ID:               problem.Problem.ID,
+		Name:             sql.NullString{String: page.Name, Valid: true},
+		Author:           sql.NullString{String: page.Author, Valid: true},
+		Parts:            sql.NullInt64{Int64: parts, Valid: true},
+		PointsMultiplier: sql.NullFloat64{Float64: multiplier, Valid: true},
+		PointsAdder:      sql.NullInt64{Int64: adder, Valid: true},
+	}, page.Difficulty.Selected)
+	if err != nil {
+		s.renderAdminProblemFormError(w, r, page, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/problems", http.StatusSeeOther)
+}
+
+func (s *Server) getAdminProblemDelete(w http.ResponseWriter, r *http.Request) {
+	problem, err := s.app.Problem(r.Context(), r.PathValue("problem"))
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	s.render(w, r, "admin/problem-delete", problem)
+}
+
+func (s *Server) postAdminProblemDelete(w http.ResponseWriter, r *http.Request) {
+	if err := s.app.DeleteProblem(r.Context(), r.PathValue("problem")); err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/problems", http.StatusSeeOther)
+}
+
+func (s *Server) readAdminProblemForm(r *http.Request, page *adminProblemFormPage) {
+	page.ContestSlug = r.FormValue("contest")
+	page.Slug = r.FormValue("slug")
+	page.Name = r.FormValue("name")
+	page.Author = r.FormValue("author")
+	page.Parts = r.FormValue("parts")
+	page.PointsMultiplier = r.FormValue("points-multiplier")
+	page.PointsAdder = r.FormValue("points-adder")
+	page.Difficulty.Selected = r.FormValue("difficulty")
+}
+
+func (s *Server) parseAdminProblemForm(w http.ResponseWriter, r *http.Request, page *adminProblemFormPage) (int64, float64, int64, bool) {
+	parts, partsErr := strconv.ParseInt(page.Parts, 10, 64)
+	multiplier, multiplierErr := strconv.ParseFloat(page.PointsMultiplier, 64)
+	adder, adderErr := strconv.ParseInt(page.PointsAdder, 10, 64)
+	if partsErr != nil || multiplierErr != nil || adderErr != nil {
+		page.Error = "Valeur numérique invalide."
+		if !s.prepareAdminProblemForm(w, r, page) {
+			return 0, 0, 0, false
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		s.render(w, r, "admin/problem-form", *page)
+		return 0, 0, 0, false
+	}
+	return parts, multiplier, adder, true
+}
+
+func (s *Server) prepareAdminProblemForm(w http.ResponseWriter, r *http.Request, page *adminProblemFormPage) bool {
+	contests, err := s.app.Contests(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return false
+	}
+	difficulties, err := s.app.Difficulties(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return false
+	}
+	page.Contests = contests
+	page.Difficulty.Difficulties = difficulties
+	page.Difficulty.Form = "admin-problem-form"
+	return true
+}
+
+func (s *Server) renderAdminProblemFormError(w http.ResponseWriter, r *http.Request, page adminProblemFormPage, err error) {
+	message, status := describe(err)
+	if status == http.StatusInternalServerError {
+		s.renderError(w, r, err)
+		return
+	}
+	page.Error = message
+	if !s.prepareAdminProblemForm(w, r, &page) {
+		return
+	}
+	w.WriteHeader(status)
+	s.render(w, r, "admin/problem-form", page)
+}
+
+func editProblemFormPage(problem app.ProblemDetail) adminProblemFormPage {
+	return adminProblemFormPage{
+		Title: "Modifier le problème", Action: "/admin/problems/" + problem.Problem.Slug + "/edit", Submit: "Enregistrer",
+		ContestSlug: problem.Contest.Slug, ContestName: problem.Contest.Name,
+		Slug: problem.Problem.Slug, Name: problem.Problem.Name, Author: problem.Problem.Author,
+		Parts:            strconv.FormatInt(problem.Problem.Parts, 10),
+		PointsMultiplier: strconv.FormatFloat(problem.Problem.PointsMultiplier, 'g', -1, 64),
+		PointsAdder:      strconv.FormatInt(problem.Problem.PointsAdder, 10),
+		Difficulty:       adminDifficultySelector{Selected: problem.Difficulty.Name},
+	}
+}
+
 func (s *Server) getAdminConfig(w http.ResponseWriter, r *http.Request) {
 	contests, err := s.app.Contests(r.Context())
 	if err != nil {
@@ -756,17 +984,18 @@ type adminDifficultySelector struct {
 	Difficulties []app.Difficulty
 	Selected     string
 	Error        string
+	Form         string
 }
 
 func (s *Server) getAdminDifficultySelector(w http.ResponseWriter, r *http.Request) {
-	s.renderAdminDifficultySelector(w, r, "", "")
+	s.renderAdminDifficultySelector(w, r, "", "", "")
 }
 
 func (s *Server) postAdminDifficulty(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	points, err := strconv.ParseInt(r.FormValue("points"), 10, 64)
 	if err != nil {
-		s.renderAdminDifficultySelector(w, r, "", "Nombre de points invalide.")
+		s.renderAdminDifficultySelector(w, r, "", "Nombre de points invalide.", r.FormValue("problem-form"))
 		return
 	}
 	if err := s.app.CreateDifficulty(r.Context(), name, points); err != nil {
@@ -774,13 +1003,13 @@ func (s *Server) postAdminDifficulty(w http.ResponseWriter, r *http.Request) {
 		if status == http.StatusInternalServerError {
 			log.Printf("creating difficulty %q: %v", name, err)
 		}
-		s.renderAdminDifficultySelector(w, r, "", msg)
+		s.renderAdminDifficultySelector(w, r, "", msg, r.FormValue("problem-form"))
 		return
 	}
-	s.renderAdminDifficultySelector(w, r, name, "")
+	s.renderAdminDifficultySelector(w, r, name, "", r.FormValue("problem-form"))
 }
 
-func (s *Server) renderAdminDifficultySelector(w http.ResponseWriter, r *http.Request, selected, message string) {
+func (s *Server) renderAdminDifficultySelector(w http.ResponseWriter, r *http.Request, selected, message, form string) {
 	difficulties, err := s.app.Difficulties(r.Context())
 	if err != nil {
 		s.renderError(w, r, err)
@@ -790,5 +1019,6 @@ func (s *Server) renderAdminDifficultySelector(w http.ResponseWriter, r *http.Re
 		Difficulties: difficulties,
 		Selected:     selected,
 		Error:        message,
+		Form:         form,
 	})
 }

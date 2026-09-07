@@ -1,0 +1,36 @@
+{{ define "content" }}
+<main class="larger">
+	<h1>Problèmes</h1>
+	<div class="btns">
+		<a class="btn btn--large" href="/admin/problems/new">Nouveau problème</a>
+	</div>
+	{{ range .Page }}
+	<section class="admin-problem-section">
+		<h2>{{ .Contest.Name }}</h2>
+		<div class="article__container admin-problem-list">
+			{{ range .Problems }}
+			<article class="admin-problem-list__item">
+				<div class="admin-problem-list__details">
+					<h3>{{ .Problem.Name }}</h3>
+					<p class="subtitle">{{ .Difficulty.Name }} · {{ .Problem.Parts }} {{ if eq .Problem.Parts 1 }}partie{{ else }}parties{{ end }}</p>
+					<ul class="admin-problem-list__parts">
+						{{ range .PartFiles }}
+						<li{{ if not .Present }} class="danger"{{ end }}>Partie {{ .Number }} : {{ if .Present }}fichier Markdown présent{{ else }}fichier Markdown manquant{{ end }}</li>
+						{{ end }}
+					</ul>
+				</div>
+				<div class="btns btns--no-marge admin-problem-list__actions">
+					<a class="btn" href="/admin/problems/{{ .Problem.Slug }}/edit">Modifier</a>
+					<a class="btn btn--danger" href="/admin/problems/{{ .Problem.Slug }}/delete">Supprimer</a>
+				</div>
+			</article>
+			{{ else }}
+			<p>Aucun problème dans ce concours.</p>
+			{{ end }}
+		</div>
+	</section>
+	{{ else }}
+	<p>Aucun concours n'a été créé.</p>
+	{{ end }}
+</main>
+{{ end }}

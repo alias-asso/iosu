@@ -84,6 +84,9 @@ func (a *App) UpdateProblem(ctx context.Context, in sqlc.UpdateProblemParams) er
 	if in.Name.Valid && (in.Name.String == "" || len(in.Name.String) > maxNameLen) {
 		return ErrInvalidName
 	}
+	if in.Author.Valid && len(in.Author.String) > maxAuthorLen {
+		return ErrInvalidName
+	}
 	if in.Parts.Valid && in.Parts.Int64 < 1 {
 		return ErrInvalidPart
 	}
@@ -101,6 +104,18 @@ func (a *App) UpdateProblem(ctx context.Context, in sqlc.UpdateProblemParams) er
 	return nil
 }
 
+func (a *App) UpdateProblemDifficulty(ctx context.Context, in sqlc.UpdateProblemParams, difficultyName string) error {
+	difficulty, err := a.store.GetDifficultyByName(ctx, difficultyName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrDifficultyNotFound
+	}
+	if err != nil {
+		return err
+	}
+	in.DifficultyID = sql.NullInt64{Int64: difficulty.ID, Valid: true}
+	return a.UpdateProblem(ctx, in)
+}
+
 // Problem looks up a problem with its contest and difficulty.
 func (a *App) Problem(ctx context.Context, slug string) (ProblemDetail, error) {
 	if len(slug) > maxSlugLen {
@@ -111,6 +126,40 @@ func (a *App) Problem(ctx context.Context, slug string) (ProblemDetail, error) {
 		return ProblemDetail{}, ErrProblemNotFound
 	}
 	return p, err
+}
+
+func (a *App) ProblemsByContest(ctx context.Context, contestID int64) ([]ProblemInList, error) {
+	return a.store.ListProblemsByContest(ctx, contestID)
+}
+
+func (a *App) ProblemPartFiles(contestSlug, problemSlug string, parts int64) ([]bool, error) {
+	files := make([]bool, parts)
+	for i := int64(1); i <= parts; i++ {
+		info, err := os.Stat(filepath.Join(a.problemDir(contestSlug, problemSlug), fmt.Sprintf("part%d.md", i)))
+		switch {
+		case err == nil:
+			files[i-1] = info.Mode().IsRegular()
+		case errors.Is(err, os.ErrNotExist):
+		default:
+			return nil, err
+		}
+	}
+	return files, nil
+}
+
+func (a *App) DeleteProblem(ctx context.Context, slug string) error {
+	problem, err := a.Problem(ctx, slug)
+	if err != nil {
+		return err
+	}
+	n, err := a.store.DeleteProblem(ctx, problem.Problem.ID)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrProblemNotFound
+	}
+	return nil
 }
 
 // ProblemIn looks up a problem and checks it belongs to the named contest,

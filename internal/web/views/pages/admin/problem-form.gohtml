@@ -1,0 +1,39 @@
+{{ define "content" }}
+<main>
+	<h1>{{ .Page.Title }}</h1>
+	{{ if .Page.Error }}
+	<div class="response response--danger"><p>{{ .Page.Error }}</p></div>
+	{{ end }}
+	<form id="admin-problem-form" method="post" action="{{ .Page.Action }}" class="larger">
+		{{ if .Page.SelectContest }}
+		<div>
+			<label for="contest">Concours</label>
+			<select id="contest" name="contest" required>
+				{{ range .Page.Contests }}<option value="{{ .Slug }}"{{ if eq .Slug $.Page.ContestSlug }} selected{{ end }}>{{ .Name }}</option>{{ else }}<option value="" disabled selected>Aucun concours disponible</option>{{ end }}
+			</select>
+		</div>
+		{{ else }}
+		<div><span>Concours</span><strong>{{ .Page.ContestName }}</strong></div>
+		{{ end }}
+		<div>
+			<label for="slug">Identifiant</label>
+			<input id="slug" name="slug" value="{{ .Page.Slug }}" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" maxlength="70"{{ if not .Page.SelectContest }} readonly{{ end }} required>
+		</div>
+		<div>
+			<label for="name">Nom</label>
+			<input id="name" name="name" value="{{ .Page.Name }}" maxlength="70" required>
+		</div>
+		<div>
+			<label for="author">Auteur</label>
+			<input id="author" name="author" value="{{ .Page.Author }}" maxlength="40">
+		</div>
+		<div class="form--reverse">
+			<div><label for="parts">Nombre de parties</label><input id="parts" name="parts" type="number" min="1" value="{{ .Page.Parts }}" required></div>
+			<div><label for="points-multiplier">Multiplicateur de points</label><input id="points-multiplier" name="points-multiplier" type="number" step="any" value="{{ .Page.PointsMultiplier }}" required></div>
+			<div><label for="points-adder">Points supplémentaires</label><input id="points-adder" name="points-adder" type="number" value="{{ .Page.PointsAdder }}" required></div>
+		</div>
+	</form>
+	{{ template "admin-difficulty-selector" .Page.Difficulty }}
+	<div class="btns"><button class="btn" type="submit" form="admin-problem-form">{{ .Page.Submit }}</button></div>
+</main>
+{{ end }}

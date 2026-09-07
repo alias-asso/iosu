@@ -33,8 +33,12 @@ UPDATE problems SET
     author            = COALESCE(sqlc.narg('author'), author),
     parts             = COALESCE(sqlc.narg('parts'), parts),
     points_multiplier = COALESCE(sqlc.narg('points_multiplier'), points_multiplier),
-    points_adder      = COALESCE(sqlc.narg('points_adder'), points_adder)
+    points_adder      = COALESCE(sqlc.narg('points_adder'), points_adder),
+    difficulty_id     = COALESCE(sqlc.narg('difficulty_id'), difficulty_id)
 WHERE id = sqlc.arg('id');
+
+-- name: DeleteProblem :execrows
+DELETE FROM problems WHERE id = ?;
 
 -- name: UpsertProblemInput :exec
 INSERT INTO problem_inputs (problem_id, user_id, input) VALUES (?, ?, ?)

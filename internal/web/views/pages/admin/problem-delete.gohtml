@@ -1,0 +1,12 @@
+{{ define "content" }}
+<main>
+	<h1>Supprimer le problème</h1>
+	<p>Voulez-vous vraiment supprimer le problème « {{ .Page.Problem.Name }} » ?</p>
+	<div class="btns">
+		<a class="btn" href="/admin/problems">Annuler</a>
+		<form method="post" action="/admin/problems/{{ .Page.Problem.Slug }}/delete">
+			<button class="btn btn--danger" type="submit">Confirmer la suppression</button>
+		</form>
+	</div>
+</main>
+{{ end }}

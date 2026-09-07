@@ -2,7 +2,7 @@
 <section id="admin-difficulty-selector">
   <h2>Difficulté</h2>
   <label for="difficulty">Difficultés disponibles</label>
-  <select id="difficulty" name="difficulty" required>
+  <select id="difficulty" name="difficulty"{{ if .Form }} form="{{ .Form }}"{{ end }} required>
     {{ range .Difficulties }}
     <option value="{{ .Name }}"{{ if eq .Name $.Selected }} selected{{ end }}>{{ .Name }} ({{ .Points }} points)</option>
     {{ else }}
@@ -11,6 +11,7 @@
   </select>
 
   <form hx-post="/admin/difficulties" hx-target="#admin-difficulty-selector" hx-swap="outerHTML">
+    {{ if .Form }}<input type="hidden" name="problem-form" value="{{ .Form }}">{{ end }}
     <div>
       <label for="difficulty-name">Nom</label>
       <input id="difficulty-name" name="name" maxlength="20" required />
