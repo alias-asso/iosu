@@ -227,6 +227,41 @@ func TestSetAdmin(t *testing.T) {
 	}
 }
 
+func TestUsersUpdateAndDelete(t *testing.T) {
+	f := newFixture(t)
+	f.user("zoe")
+	if _, err := f.Register(f.ctx(), "alice", "alice@example.com"); err != nil {
+		t.Fatalf("register pending user: %v", err)
+	}
+
+	users, err := f.Users(f.ctx())
+	if err != nil {
+		t.Fatalf("list users: %v", err)
+	}
+	if len(users) != 2 || users[0].User.Username != "alice" || users[0].ActivationCode == "" || users[1].User.Username != "zoe" {
+		t.Fatalf("users are not ordered with pending accounts first: %+v", users)
+	}
+
+	alice := users[0].User
+	if err := f.UpdateUser(f.ctx(), alice.ID, "alicia", "alicia@example.com"); err != nil {
+		t.Fatalf("update user: %v", err)
+	}
+	updated, err := f.User(f.ctx(), alice.ID)
+	if err != nil {
+		t.Fatalf("load updated user: %v", err)
+	}
+	if updated.Username != "alicia" || updated.Email != "alicia@example.com" {
+		t.Fatalf("updated user is not populated: %+v", updated)
+	}
+
+	if err := f.DeleteUser(f.ctx(), alice.ID); err != nil {
+		t.Fatalf("delete user: %v", err)
+	}
+	if _, err := f.User(f.ctx(), alice.ID); !errors.Is(err, ErrUserNotFound) {
+		t.Fatalf("load deleted user: got %v, want ErrUserNotFound", err)
+	}
+}
+
 func TestValidPassword(t *testing.T) {
 	tests := []struct {
 		password string

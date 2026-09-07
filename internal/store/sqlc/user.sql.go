@@ -24,6 +24,15 @@ func (q *Queries) ActivateUser(ctx context.Context, arg ActivateUserParams) erro
 	return err
 }
 
+const approveUser = `-- name: ApproveUser :exec
+UPDATE users SET activated = TRUE WHERE id = ?
+`
+
+func (q *Queries) ApproveUser(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, approveUser, id)
+	return err
+}
+
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*) FROM users
 `
@@ -110,6 +119,18 @@ func (q *Queries) CreateUserIfMissing(ctx context.Context, arg CreateUserIfMissi
 		arg.Admin,
 		arg.CreatedAt,
 	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
+const deleteUser = `-- name: DeleteUser :execrows
+DELETE FROM users WHERE id = ?
+`
+
+func (q *Queries) DeleteUser(ctx context.Context, id int64) (int64, error) {
+	result, err := q.db.ExecContext(ctx, deleteUser, id)
 	if err != nil {
 		return 0, err
 	}
@@ -275,6 +296,55 @@ func (q *Queries) ListPendingActivations(ctx context.Context) ([]ListPendingActi
 	return items, nil
 }
 
+const listUsers = `-- name: ListUsers :many
+SELECT users.id, users.username, users.email, users.password_hash, users.activated, users.admin, users.created_at, CAST(COALESCE((
+    SELECT code
+    FROM activation_codes
+    WHERE user_id = users.id AND used_at IS NULL
+    ORDER BY expires_at DESC
+    LIMIT 1
+), '') AS TEXT) AS activation_code
+FROM users
+ORDER BY activated ASC, username ASC
+`
+
+type ListUsersRow struct {
+	User           User
+	ActivationCode string
+}
+
+func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
+	rows, err := q.db.QueryContext(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListUsersRow{}
+	for rows.Next() {
+		var i ListUsersRow
+		if err := rows.Scan(
+			&i.User.ID,
+			&i.User.Username,
+			&i.User.Email,
+			&i.User.PasswordHash,
+			&i.User.Activated,
+			&i.User.Admin,
+			&i.User.CreatedAt,
+			&i.ActivationCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const setUserAdmin = `-- name: SetUserAdmin :exec
 UPDATE users SET admin = ? WHERE id = ?
 `
@@ -300,6 +370,21 @@ type SetUserPasswordParams struct {
 
 func (q *Queries) SetUserPassword(ctx context.Context, arg SetUserPasswordParams) error {
 	_, err := q.db.ExecContext(ctx, setUserPassword, arg.PasswordHash, arg.ID)
+	return err
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE users SET username = ?, email = ? WHERE id = ?
+`
+
+type UpdateUserParams struct {
+	Username string
+	Email    string
+	ID       int64
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.ExecContext(ctx, updateUser, arg.Username, arg.Email, arg.ID)
 	return err
 }
 

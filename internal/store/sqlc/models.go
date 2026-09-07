@@ -57,15 +57,17 @@ type ProblemOutput struct {
 }
 
 type SiteConfig struct {
-	ID             int64
-	SiteTitle      string
-	MainText       string
-	SecondaryText  string
-	CurrentContest string
-	HelpContent    string
-	RulesContent   string
-	LegalContent   string
-	CreditsContent string
+	ID                           int64
+	SiteTitle                    string
+	MainText                     string
+	SecondaryText                string
+	CurrentContest               string
+	HelpContent                  string
+	RulesContent                 string
+	LegalContent                 string
+	CreditsContent               string
+	RegistrationEnabled          bool
+	RegistrationRequiresApproval bool
 }
 
 type Solve struct {

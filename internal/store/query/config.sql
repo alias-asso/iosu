@@ -16,5 +16,7 @@ UPDATE site_config SET
     help_content    = COALESCE(sqlc.narg('help_content'), help_content),
     rules_content   = COALESCE(sqlc.narg('rules_content'), rules_content),
     legal_content   = COALESCE(sqlc.narg('legal_content'), legal_content),
-    credits_content = COALESCE(sqlc.narg('credits_content'), credits_content)
+    credits_content = COALESCE(sqlc.narg('credits_content'), credits_content),
+    registration_enabled = COALESCE(sqlc.narg('registration_enabled'), registration_enabled),
+    registration_requires_approval = COALESCE(sqlc.narg('registration_requires_approval'), registration_requires_approval)
 WHERE id = 1;

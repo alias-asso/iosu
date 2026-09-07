@@ -3,6 +3,7 @@ package web
 import (
 	"database/sql"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -101,6 +102,77 @@ func (s *Server) postLogout(w http.ResponseWriter, r *http.Request) {
 	s.clearTokenCookie(w)
 	w.Header().Set("HX-Redirect", "/")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+type registerPage struct {
+	Username string
+	Email    string
+	Error    string
+	Success  string
+}
+
+func (s *Server) getRegister(w http.ResponseWriter, r *http.Request) {
+	if _, ok := userFrom(r); ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	config, err := s.app.SiteConfig(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	if !config.RegistrationEnabled {
+		s.renderError(w, r, app.ErrRegistrationDisabled)
+		return
+	}
+	s.renderWith(w, r, "register", registerPage{}, config)
+}
+
+func (s *Server) postRegister(w http.ResponseWriter, r *http.Request) {
+	if _, ok := userFrom(r); ok {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	config, err := s.app.SiteConfig(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	if !config.RegistrationEnabled {
+		s.renderError(w, r, app.ErrRegistrationDisabled)
+		return
+	}
+	page := registerPage{
+		Username: r.FormValue("username"),
+		Email:    r.FormValue("email"),
+	}
+	password := r.FormValue("password")
+	if password != r.FormValue("password-confirmation") {
+		page.Error = "Les mots de passe ne correspondent pas."
+		w.WriteHeader(http.StatusBadRequest)
+		s.renderWith(w, r, "register", page, config)
+		return
+	}
+	approved, err := s.app.RegisterWithPassword(r.Context(), page.Username, page.Email, password)
+	if err != nil {
+		message, status := describe(err)
+		if status == http.StatusInternalServerError {
+			s.renderError(w, r, err)
+			return
+		}
+		page.Error = message
+		w.WriteHeader(status)
+		s.renderWith(w, r, "register", page, config)
+		return
+	}
+	if approved {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	page.Username = ""
+	page.Email = ""
+	page.Success = "Votre inscription a bien été enregistrée. Un administrateur doit maintenant la valider."
+	s.renderWith(w, r, "register", page, config)
 }
 
 type activatePage struct {
@@ -273,6 +345,211 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 
 type adminConfigPage struct {
 	Contests []app.Contest
+}
+
+type adminUserListItem struct {
+	app.User
+	ActivationLink string
+}
+
+type adminUsersPage struct {
+	Users []adminUserListItem
+	Error string
+}
+
+func (s *Server) getAdminUsers(w http.ResponseWriter, r *http.Request) {
+	s.renderAdminUsers(w, r, "", http.StatusOK)
+}
+
+func (s *Server) postAdminUsersImport(w http.ResponseWriter, r *http.Request) {
+	file, _, err := r.FormFile("users")
+	if err != nil {
+		s.renderAdminUsers(w, r, "Sélectionnez un fichier CSV.", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	if _, err := s.app.BatchRegister(r.Context(), string(content)); err != nil {
+		message, status := describe(err)
+		if status == http.StatusInternalServerError {
+			s.renderError(w, r, err)
+			return
+		}
+		s.renderAdminUsers(w, r, message, status)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) renderAdminUsers(w http.ResponseWriter, r *http.Request, message string, status int) {
+	users, err := s.app.Users(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	page := make([]adminUserListItem, 0, len(users))
+	for _, user := range users {
+		item := adminUserListItem{User: user.User}
+		if user.ActivationCode != "" {
+			item.ActivationLink = "/activate/" + user.ActivationCode
+		}
+		page = append(page, item)
+	}
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	s.render(w, r, "admin/users", adminUsersPage{Users: page, Error: message})
+}
+
+type adminUserFormPage struct {
+	Title    string
+	Action   string
+	Submit   string
+	Username string
+	Email    string
+	Error    string
+}
+
+func (s *Server) getAdminUserNew(w http.ResponseWriter, r *http.Request) {
+	s.render(w, r, "admin/user-form", adminUserFormPage{
+		Title:  "Nouvel utilisateur",
+		Action: "/admin/users/new",
+		Submit: "Créer l'utilisateur",
+	})
+}
+
+func (s *Server) postAdminUserNew(w http.ResponseWriter, r *http.Request) {
+	page := adminUserFormPage{
+		Title:    "Nouvel utilisateur",
+		Action:   "/admin/users/new",
+		Submit:   "Créer l'utilisateur",
+		Username: r.FormValue("username"),
+		Email:    r.FormValue("email"),
+	}
+	if _, err := s.app.Register(r.Context(), page.Username, page.Email); err != nil {
+		s.renderAdminUserFormError(w, r, page, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) getAdminUserEdit(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	s.render(w, r, "admin/user-form", editUserFormPage(user))
+}
+
+func (s *Server) postAdminUserEdit(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	page := adminUserFormPage{
+		Title:    "Modifier l'utilisateur",
+		Action:   "/admin/users/" + strconv.FormatInt(user.ID, 10) + "/edit",
+		Submit:   "Enregistrer",
+		Username: r.FormValue("username"),
+		Email:    r.FormValue("email"),
+	}
+	if err := s.app.UpdateUser(r.Context(), user.ID, page.Username, page.Email); err != nil {
+		s.renderAdminUserFormError(w, r, page, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) getAdminUserAdmin(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	s.render(w, r, "admin/user-admin", user)
+}
+
+func (s *Server) postAdminUserAdmin(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	if err := s.app.SetAdmin(r.Context(), user.Username, true); err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) postAdminUserApprove(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	if err := s.app.ApproveUser(r.Context(), user.ID); err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) getAdminUserDelete(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	s.render(w, r, "admin/user-delete", user)
+}
+
+func (s *Server) postAdminUserDelete(w http.ResponseWriter, r *http.Request) {
+	user, ok := s.adminUser(w, r)
+	if !ok {
+		return
+	}
+	if err := s.app.DeleteUser(r.Context(), user.ID); err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/users", http.StatusSeeOther)
+}
+
+func (s *Server) adminUser(w http.ResponseWriter, r *http.Request) (app.User, bool) {
+	id, err := strconv.ParseInt(r.PathValue("user"), 10, 64)
+	if err != nil {
+		s.renderError(w, r, app.ErrUserNotFound)
+		return app.User{}, false
+	}
+	user, err := s.app.User(r.Context(), id)
+	if err != nil {
+		s.renderError(w, r, err)
+		return app.User{}, false
+	}
+	return user, true
+}
+
+func editUserFormPage(user app.User) adminUserFormPage {
+	return adminUserFormPage{
+		Title:    "Modifier l'utilisateur",
+		Action:   "/admin/users/" + strconv.FormatInt(user.ID, 10) + "/edit",
+		Submit:   "Enregistrer",
+		Username: user.Username,
+		Email:    user.Email,
+	}
+}
+
+func (s *Server) renderAdminUserFormError(w http.ResponseWriter, r *http.Request, page adminUserFormPage, err error) {
+	message, status := describe(err)
+	if status == http.StatusInternalServerError {
+		s.renderError(w, r, err)
+		return
+	}
+	page.Error = message
+	w.WriteHeader(status)
+	s.render(w, r, "admin/user-form", page)
 }
 
 func (s *Server) getAdminContests(w http.ResponseWriter, r *http.Request) {
@@ -459,6 +736,14 @@ func (s *Server) postAdminConfig(w http.ResponseWriter, r *http.Request) {
 		RulesContent:   field("rules-content"),
 		LegalContent:   field("legal-content"),
 		CreditsContent: field("credits-content"),
+		RegistrationEnabled: sql.NullBool{
+			Bool:  r.Form.Has("registration-enabled"),
+			Valid: true,
+		},
+		RegistrationRequiresApproval: sql.NullBool{
+			Bool:  r.Form.Has("registration-requires-approval"),
+			Valid: true,
+		},
 	})
 	if err != nil {
 		s.renderError(w, r, err)

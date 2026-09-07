@@ -1,0 +1,46 @@
+{{ define "content" }}
+<main class="larger">
+	<h1>Utilisateurs</h1>
+	<div class="btns">
+		<a class="btn btn--large" href="/admin/users/new">Nouvel utilisateur</a>
+	</div>
+	<form method="post" action="/admin/users/import" enctype="multipart/form-data" class="admin-user-import">
+		<div>
+			<label for="users">Importer des utilisateurs depuis un fichier CSV</label>
+			<input id="users" name="users" type="file" accept=".csv,text/csv" required>
+		</div>
+		<button class="btn" type="submit">Importer</button>
+	</form>
+	{{ if .Page.Error }}
+	<div class="response response--danger">
+		<p>{{ .Page.Error }}</p>
+	</div>
+	{{ end }}
+	<section class="article__container admin-user-list">
+		{{ range .Page.Users }}
+		<article class="admin-user-list__item">
+			<div class="admin-user-list__details">
+				<h3>{{ .Username }}</h3>
+				<p class="subtitle">{{ .Email }} · {{ if .Activated }}Activé{{ else }}Non activé{{ end }}{{ if .Admin }} · Administrateur{{ end }}</p>
+			</div>
+			<div class="btns btns--no-marge admin-user-list__actions">
+				{{ if not .Activated }}
+					{{ if .ActivationLink }}
+					<a class="btn" href="{{ .ActivationLink }}">{{ if $.Config.RegistrationRequiresApproval }}Valider{{ else }}Activer{{ end }}</a>
+					{{ else }}
+					<form method="post" action="/admin/users/{{ .ID }}/approve">
+						<button class="btn" type="submit">Valider</button>
+					</form>
+					{{ end }}
+				{{ end }}
+				<a class="btn" href="/admin/users/{{ .ID }}/edit">Modifier</a>
+				{{ if not .Admin }}<a class="btn" href="/admin/users/{{ .ID }}/admin">Rendre administrateur</a>{{ end }}
+				<a class="btn btn--danger" href="/admin/users/{{ .ID }}/delete">Supprimer</a>
+			</div>
+		</article>
+		{{ else }}
+		<p>Aucun utilisateur n'a été créé.</p>
+		{{ end }}
+	</section>
+</main>
+{{ end }}

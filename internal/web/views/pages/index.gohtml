@@ -16,6 +16,7 @@
   <div class="btns btns--center">
     {{ if not .LoggedIn }}
     <a href="/login" class="btn">Se connecter</a>
+    {{ if .Config.RegistrationEnabled }}<a href="/register" class="btn">S'inscrire</a>{{ end }}
     {{ end }}
     {{ with .Page.Contest }}
     <a href="/contest/{{ .Slug }}/" class="btn">Accéder au concours</a>

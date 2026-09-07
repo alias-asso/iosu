@@ -46,7 +46,7 @@ func (q *Queries) CreateSiteConfigIfMissing(ctx context.Context, arg CreateSiteC
 }
 
 const getSiteConfig = `-- name: GetSiteConfig :one
-SELECT id, site_title, main_text, secondary_text, current_contest, help_content, rules_content, legal_content, credits_content FROM site_config WHERE id = 1
+SELECT id, site_title, main_text, secondary_text, current_contest, help_content, rules_content, legal_content, credits_content, registration_enabled, registration_requires_approval FROM site_config WHERE id = 1
 `
 
 func (q *Queries) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
@@ -62,6 +62,8 @@ func (q *Queries) GetSiteConfig(ctx context.Context) (SiteConfig, error) {
 		&i.RulesContent,
 		&i.LegalContent,
 		&i.CreditsContent,
+		&i.RegistrationEnabled,
+		&i.RegistrationRequiresApproval,
 	)
 	return i, err
 }
@@ -75,19 +77,23 @@ UPDATE site_config SET
     help_content    = COALESCE(?5, help_content),
     rules_content   = COALESCE(?6, rules_content),
     legal_content   = COALESCE(?7, legal_content),
-    credits_content = COALESCE(?8, credits_content)
+    credits_content = COALESCE(?8, credits_content),
+    registration_enabled = COALESCE(?9, registration_enabled),
+    registration_requires_approval = COALESCE(?10, registration_requires_approval)
 WHERE id = 1
 `
 
 type UpdateSiteConfigParams struct {
-	SiteTitle      sql.NullString
-	MainText       sql.NullString
-	SecondaryText  sql.NullString
-	CurrentContest sql.NullString
-	HelpContent    sql.NullString
-	RulesContent   sql.NullString
-	LegalContent   sql.NullString
-	CreditsContent sql.NullString
+	SiteTitle                    sql.NullString
+	MainText                     sql.NullString
+	SecondaryText                sql.NullString
+	CurrentContest               sql.NullString
+	HelpContent                  sql.NullString
+	RulesContent                 sql.NullString
+	LegalContent                 sql.NullString
+	CreditsContent               sql.NullString
+	RegistrationEnabled          sql.NullBool
+	RegistrationRequiresApproval sql.NullBool
 }
 
 func (q *Queries) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigParams) error {
@@ -100,6 +106,8 @@ func (q *Queries) UpdateSiteConfig(ctx context.Context, arg UpdateSiteConfigPara
 		arg.RulesContent,
 		arg.LegalContent,
 		arg.CreditsContent,
+		arg.RegistrationEnabled,
+		arg.RegistrationRequiresApproval,
 	)
 	return err
 }

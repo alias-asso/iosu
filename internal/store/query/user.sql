@@ -16,11 +16,31 @@ SELECT * FROM users WHERE username = ?;
 -- name: CountUsers :one
 SELECT COUNT(*) FROM users;
 
+-- name: ListUsers :many
+SELECT sqlc.embed(users), CAST(COALESCE((
+    SELECT code
+    FROM activation_codes
+    WHERE user_id = users.id AND used_at IS NULL
+    ORDER BY expires_at DESC
+    LIMIT 1
+), '') AS TEXT) AS activation_code
+FROM users
+ORDER BY activated ASC, username ASC;
+
+-- name: UpdateUser :exec
+UPDATE users SET username = ?, email = ? WHERE id = ?;
+
+-- name: DeleteUser :execrows
+DELETE FROM users WHERE id = ?;
+
 -- name: SetUserPassword :exec
 UPDATE users SET password_hash = ? WHERE id = ?;
 
 -- name: ActivateUser :exec
 UPDATE users SET password_hash = ?, activated = TRUE WHERE id = ?;
+
+-- name: ApproveUser :exec
+UPDATE users SET activated = TRUE WHERE id = ?;
 
 -- name: SetUserAdmin :exec
 UPDATE users SET admin = ? WHERE id = ?;

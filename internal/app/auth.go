@@ -64,6 +64,45 @@ func (a *App) UserByUsername(ctx context.Context, username string) (User, error)
 	return user, err
 }
 
+func (a *App) Users(ctx context.Context) ([]UserInList, error) {
+	return a.store.ListUsers(ctx)
+}
+
+func (a *App) UpdateUser(ctx context.Context, id int64, username, email string) error {
+	if username == "" || len(username) > maxUsernameLen {
+		return ErrInvalidUsername
+	}
+	if len(email) > maxEmailLen {
+		return ErrInvalidEmail
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return ErrInvalidEmail
+	}
+	if _, err := a.User(ctx, id); err != nil {
+		return err
+	}
+	err := a.store.UpdateUser(ctx, sqlc.UpdateUserParams{
+		Username: username,
+		Email:    email,
+		ID:       id,
+	})
+	if isUniqueViolation(err) {
+		return ErrUserExists
+	}
+	return err
+}
+
+func (a *App) DeleteUser(ctx context.Context, id int64) error {
+	n, err := a.store.DeleteUser(ctx, id)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
 // EnsureAdmin creates the initial admin account, but only on a database with
 // no users at all. It never touches an existing account, so the configured
 // password cannot silently reset a changed one.
@@ -124,14 +163,8 @@ func (a *App) SetAdmin(ctx context.Context, username string, admin bool) error {
 
 // Register creates an unactivated account and returns its activation code.
 func (a *App) Register(ctx context.Context, username, email string) (string, error) {
-	if username == "" || len(username) > maxUsernameLen {
-		return "", ErrInvalidUsername
-	}
-	if len(email) > maxEmailLen {
-		return "", ErrInvalidEmail
-	}
-	if _, err := mail.ParseAddress(email); err != nil {
-		return "", ErrInvalidEmail
+	if err := validUserDetails(username, email); err != nil {
+		return "", err
 	}
 
 	code, err := randomCode(activationCodeLen)
@@ -163,6 +196,63 @@ func (a *App) Register(ctx context.Context, username, email string) (string, err
 		return "", err
 	}
 	return code, nil
+}
+
+func (a *App) RegisterWithPassword(ctx context.Context, username, email, password string) (bool, error) {
+	config, err := a.SiteConfig(ctx)
+	if err != nil {
+		return false, err
+	}
+	if !config.RegistrationEnabled {
+		return false, ErrRegistrationDisabled
+	}
+	if err := validUserDetails(username, email); err != nil {
+		return false, err
+	}
+	if !ValidPassword(password) {
+		return false, ErrWeakPassword
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcryptCost)
+	if err != nil {
+		return false, err
+	}
+	approved := !config.RegistrationRequiresApproval
+	_, err = a.store.CreateUser(ctx, sqlc.CreateUserParams{
+		Username:     username,
+		Email:        email,
+		PasswordHash: string(hash),
+		Activated:    approved,
+		Admin:        false,
+		CreatedAt:    a.now().Unix(),
+	})
+	if isUniqueViolation(err) {
+		return false, ErrUserExists
+	}
+	return approved, err
+}
+
+func (a *App) ApproveUser(ctx context.Context, id int64) error {
+	user, err := a.User(ctx, id)
+	if err != nil {
+		return err
+	}
+	if user.PasswordHash == "" {
+		return ErrUserNeedsPassword
+	}
+	return a.store.ApproveUser(ctx, id)
+}
+
+func validUserDetails(username, email string) error {
+	if username == "" || len(username) > maxUsernameLen {
+		return ErrInvalidUsername
+	}
+	if len(email) > maxEmailLen {
+		return ErrInvalidEmail
+	}
+	if _, err := mail.ParseAddress(email); err != nil {
+		return ErrInvalidEmail
+	}
+	return nil
 }
 
 // BatchRegister creates one account per row of a CSV with "username" and

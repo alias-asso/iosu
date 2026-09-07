@@ -1,13 +1,16 @@
 package web
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -137,6 +140,25 @@ func (ts *testServer) postForm(path string, form url.Values, as *app.User) *http
 	return ts.do(req, as)
 }
 
+func (ts *testServer) postFile(path, field, filename, content string, as *app.User) *httptest.ResponseRecorder {
+	ts.t.Helper()
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	file, err := w.CreateFormFile(field, filename)
+	if err != nil {
+		ts.t.Fatalf("create multipart file: %v", err)
+	}
+	if _, err := file.Write([]byte(content)); err != nil {
+		ts.t.Fatalf("write multipart file: %v", err)
+	}
+	if err := w.Close(); err != nil {
+		ts.t.Fatalf("close multipart body: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, path, &body)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	return ts.do(req, as)
+}
+
 func TestProtectedRoutesRedirectAnonymousVisitors(t *testing.T) {
 	ts := newTestServer(t)
 	for _, path := range []string{
@@ -219,6 +241,94 @@ func TestAdminConfigUpdatesAndClearsCurrentContest(t *testing.T) {
 		if config.CurrentContest != slug {
 			t.Errorf("current contest is %q, want %q", config.CurrentContest, slug)
 		}
+	}
+}
+
+func TestRegistrationSettingsAndApproval(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/config", &admin)
+	for _, want := range []string{`name="registration-enabled"`, `name="registration-requires-approval"`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("config page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+	if rec := ts.get("/register", nil); rec.Code != http.StatusNotFound {
+		t.Fatalf("registration is available while disabled: status %d", rec.Code)
+	}
+	if body := ts.get("/", nil).Body.String(); strings.Contains(body, `href="/register"`) {
+		t.Fatalf("home page shows registration while disabled: %s", body)
+	}
+
+	rec = ts.postForm("/admin/config", url.Values{
+		"registration-enabled":           {"on"},
+		"registration-requires-approval": {"on"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("enabling registration: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	config, err := ts.app.SiteConfig(t.Context())
+	if err != nil || !config.RegistrationEnabled || !config.RegistrationRequiresApproval {
+		t.Fatalf("registration config: config=%+v err=%v", config, err)
+	}
+	if body := ts.get("/", nil).Body.String(); !strings.Contains(body, `href="/register"`) {
+		t.Fatalf("home page does not show registration: %s", body)
+	}
+	if rec := ts.get("/register", nil); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `action="/register"`) {
+		t.Fatalf("registration form: status %d, body %s", rec.Code, rec.Body.String())
+	}
+
+	rec = ts.postForm("/register", url.Values{
+		"username":              {"alice"},
+		"email":                 {"alice@example.com"},
+		"password":              {testPassword},
+		"password-confirmation": {testPassword},
+	}, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "doit maintenant la valider") {
+		t.Fatalf("pending registration: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	alice, err := ts.app.UserByUsername(t.Context(), "alice")
+	if err != nil || alice.Activated {
+		t.Fatalf("pending user: user=%+v err=%v", alice, err)
+	}
+	if _, err := ts.app.Authenticate(t.Context(), "alice", testPassword); !errors.Is(err, app.ErrNotActivated) {
+		t.Fatalf("authentication before approval: got %v, want ErrNotActivated", err)
+	}
+
+	id := strconv.FormatInt(alice.ID, 10)
+	body := ts.get("/admin/users", &admin).Body.String()
+	if !strings.Contains(body, `action="/admin/users/`+id+`/approve"`) || !strings.Contains(body, ">Valider</button>") {
+		t.Fatalf("approval action is missing: %s", body)
+	}
+	rec = ts.postForm("/admin/users/"+id+"/approve", nil, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/users" {
+		t.Fatalf("approving user: status %d, location %q", rec.Code, rec.Header().Get("Location"))
+	}
+	if _, err := ts.app.Authenticate(t.Context(), "alice", testPassword); err != nil {
+		t.Fatalf("authentication after approval: %v", err)
+	}
+}
+
+func TestRegistrationWithoutApprovalActivatesUser(t *testing.T) {
+	ts := newTestServer(t)
+	if err := ts.app.UpdateSiteConfig(t.Context(), sqlc.UpdateSiteConfigParams{
+		RegistrationEnabled: sql.NullBool{Bool: true, Valid: true},
+	}); err != nil {
+		t.Fatalf("enable registration: %v", err)
+	}
+
+	rec := ts.postForm("/register", url.Values{
+		"username":              {"alice"},
+		"email":                 {"alice@example.com"},
+		"password":              {testPassword},
+		"password-confirmation": {testPassword},
+	}, nil)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/login" {
+		t.Fatalf("registration: status %d, location %q, body %s", rec.Code, rec.Header().Get("Location"), rec.Body.String())
+	}
+	if _, err := ts.app.Authenticate(t.Context(), "alice", testPassword); err != nil {
+		t.Fatalf("new user is not active: %v", err)
 	}
 }
 
@@ -442,6 +552,125 @@ func TestAdminContestsListsAllContests(t *testing.T) {
 		if !strings.Contains(rec.Body.String(), want) {
 			t.Errorf("contest page does not contain %q: %s", want, rec.Body.String())
 		}
+	}
+}
+
+func TestAdminUsersCreateListAndEdit(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.postForm("/admin/users/new", url.Values{
+		"username": {"alice"},
+		"email":    {"alice@example.com"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/users" {
+		t.Fatalf("creating user: status %d, location %q", rec.Code, rec.Header().Get("Location"))
+	}
+	alice, err := ts.app.UserByUsername(t.Context(), "alice")
+	if err != nil {
+		t.Fatalf("loading created user: %v", err)
+	}
+
+	rec = ts.get("/admin/users", &admin)
+	body := rec.Body.String()
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list status %d, want 200", rec.Code)
+	}
+	for _, want := range []string{
+		"Utilisateurs",
+		`href="/admin/users/new"`,
+		"alice@example.com",
+		"Non activé",
+		">Activer</a>",
+		`href="/admin/users/` + strconv.FormatInt(alice.ID, 10) + `/edit"`,
+		`href="/admin/users/` + strconv.FormatInt(alice.ID, 10) + `/admin"`,
+		`href="/admin/users/` + strconv.FormatInt(alice.ID, 10) + `/delete"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Errorf("user page does not contain %q: %s", want, body)
+		}
+	}
+	if strings.Contains(body, "Lien d&#39;activation") || strings.Contains(body, ">Copier</button>") {
+		t.Errorf("activation link or copy button is still displayed: %s", body)
+	}
+	if strings.Index(body, "alice@example.com") > strings.Index(body, "root@example.com") {
+		t.Error("pending user is listed after an activated user")
+	}
+
+	rec = ts.postForm("/admin/users/"+strconv.FormatInt(alice.ID, 10)+"/edit", url.Values{
+		"username": {"alicia"},
+		"email":    {"alicia@example.com"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("editing user: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	updated, err := ts.app.User(t.Context(), alice.ID)
+	if err != nil || updated.Username != "alicia" || updated.Email != "alicia@example.com" {
+		t.Fatalf("edited user: user=%+v err=%v", updated, err)
+	}
+}
+
+func TestAdminUsersImportCSV(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+
+	rec := ts.get("/admin/users", &admin)
+	for _, want := range []string{
+		`action="/admin/users/import"`,
+		`type="file"`,
+		`accept=".csv,text/csv"`,
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("import form does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	rec = ts.postFile("/admin/users/import", "users", "users.csv",
+		"username,email\nalice,alice@example.com\nbob,bob@example.com\n", &admin)
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/admin/users" {
+		t.Fatalf("importing users: status %d, location %q, body %s", rec.Code, rec.Header().Get("Location"), rec.Body.String())
+	}
+	for _, username := range []string{"alice", "bob"} {
+		if _, err := ts.app.UserByUsername(t.Context(), username); err != nil {
+			t.Errorf("loading imported user %q: %v", username, err)
+		}
+	}
+
+	rec = ts.postFile("/admin/users/import", "users", "bad.csv", "name,mail\nalice,nope\n", &admin)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Le fichier CSV doit contenir") {
+		t.Fatalf("invalid import: status %d, body %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAdminUserPromotionAndDeletionRequireConfirmation(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	alice := ts.user("alice")
+	id := strconv.FormatInt(alice.ID, 10)
+
+	rec := ts.get("/admin/users/"+id+"/admin", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Confirmer la promotion") {
+		t.Fatalf("promotion confirmation: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	rec = ts.postForm("/admin/users/"+id+"/admin", nil, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("promoting user: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	alice, err := ts.app.User(t.Context(), alice.ID)
+	if err != nil || !alice.Admin {
+		t.Fatalf("promoted user: user=%+v err=%v", alice, err)
+	}
+
+	rec = ts.get("/admin/users/"+id+"/delete", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Confirmer la suppression") {
+		t.Fatalf("deletion confirmation: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	rec = ts.postForm("/admin/users/"+id+"/delete", nil, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("deleting user: status %d, body %s", rec.Code, rec.Body.String())
+	}
+	if _, err := ts.app.User(t.Context(), alice.ID); !errors.Is(err, app.ErrUserNotFound) {
+		t.Fatalf("loading deleted user: got %v, want ErrUserNotFound", err)
 	}
 }
 

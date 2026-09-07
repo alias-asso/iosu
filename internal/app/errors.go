@@ -6,10 +6,12 @@ import "errors"
 // layer maps them to user-facing French text; nothing here is displayed
 // verbatim.
 var (
-	ErrInvalidCredentials = errors.New("invalid username or password")
-	ErrNotActivated       = errors.New("account is not activated")
-	ErrUserExists         = errors.New("user already exists")
-	ErrUserNotFound       = errors.New("user not found")
+	ErrInvalidCredentials   = errors.New("invalid username or password")
+	ErrNotActivated         = errors.New("account is not activated")
+	ErrUserExists           = errors.New("user already exists")
+	ErrUserNotFound         = errors.New("user not found")
+	ErrRegistrationDisabled = errors.New("registration is disabled")
+	ErrUserNeedsPassword    = errors.New("user has not chosen a password")
 
 	ErrInvalidUsername = errors.New("invalid username")
 	ErrInvalidEmail    = errors.New("invalid email address")

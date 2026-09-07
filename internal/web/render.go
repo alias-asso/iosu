@@ -80,10 +80,13 @@ var messages = map[error]struct {
 	text   string
 	status int
 }{
-	app.ErrInvalidCredentials: {"Nom d'utilisateur ou mot de passe incorrect.", http.StatusUnauthorized},
-	app.ErrNotActivated:       {"Ce compte n'est pas encore activé.", http.StatusForbidden},
-	app.ErrUserExists:         {"Cet utilisateur existe déjà.", http.StatusConflict},
-	app.ErrUserNotFound:       {"Utilisateur introuvable.", http.StatusNotFound},
+	app.ErrInvalidCredentials:   {"Nom d'utilisateur ou mot de passe incorrect.", http.StatusUnauthorized},
+	app.ErrNotActivated:         {"Ce compte n'est pas encore activé.", http.StatusForbidden},
+	app.ErrUserExists:           {"Cet utilisateur existe déjà.", http.StatusConflict},
+	app.ErrUserNotFound:         {"Utilisateur introuvable.", http.StatusNotFound},
+	app.ErrInvalidCSV:           {"Le fichier CSV doit contenir les colonnes « username » et « email » et des lignes valides.", http.StatusBadRequest},
+	app.ErrRegistrationDisabled: {"Les inscriptions sont fermées.", http.StatusNotFound},
+	app.ErrUserNeedsPassword:    {"Cet utilisateur doit d'abord choisir un mot de passe.", http.StatusConflict},
 
 	app.ErrInvalidUsername: {"Nom d'utilisateur invalide.", http.StatusBadRequest},
 	app.ErrInvalidEmail:    {"Adresse e-mail invalide.", http.StatusBadRequest},

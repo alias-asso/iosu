@@ -1,0 +1,12 @@
+{{ define "content" }}
+<main>
+	<h1>Supprimer l'utilisateur</h1>
+	<p>Voulez-vous vraiment supprimer l'utilisateur « {{ .Page.Username }} » ?</p>
+	<div class="btns">
+		<a class="btn" href="/admin/users">Annuler</a>
+		<form method="post" action="/admin/users/{{ .Page.ID }}/delete">
+			<button class="btn btn--danger" type="submit">Confirmer la suppression</button>
+		</form>
+	</div>
+</main>
+{{ end }}

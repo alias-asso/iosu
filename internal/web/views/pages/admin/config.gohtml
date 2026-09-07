@@ -15,6 +15,14 @@
 			<option value="{{ .Slug }}"{{ if eq .Slug $.Config.CurrentContest }} selected{{ end }}>{{ .Name }}</option>
 			{{ end }}
 		</select>
+		<label class="form--checkbox" for="registration-enabled">
+			<input id="registration-enabled" name="registration-enabled" type="checkbox"{{ if .Config.RegistrationEnabled }} checked{{ end }}>
+			Autoriser les inscriptions
+		</label>
+		<label class="form--checkbox" for="registration-requires-approval">
+			<input id="registration-requires-approval" name="registration-requires-approval" type="checkbox"{{ if .Config.RegistrationRequiresApproval }} checked{{ end }}>
+			Exiger la validation des inscriptions par un administrateur
+		</label>
 		<label for="rules-content">Page "règles"</label>
 		<textarea id="rules-content" name="rules-content">{{ .Config.RulesContent }}</textarea>
 		<label for="help-content">Page "aide"</label>

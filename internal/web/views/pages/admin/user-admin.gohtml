@@ -1,0 +1,12 @@
+{{ define "content" }}
+<main>
+	<h1>Rendre administrateur</h1>
+	<p>Voulez-vous vraiment rendre « {{ .Page.Username }} » administrateur ?</p>
+	<div class="btns">
+		<a class="btn" href="/admin/users">Annuler</a>
+		<form method="post" action="/admin/users/{{ .Page.ID }}/admin">
+			<button class="btn btn--danger" type="submit">Confirmer la promotion</button>
+		</form>
+	</div>
+</main>
+{{ end }}

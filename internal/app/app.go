@@ -26,6 +26,7 @@ type (
 	ProblemInList = sqlc.ListProblemsByContestRow
 	Leaderboarder = sqlc.LeaderboardRow
 	PendingUser   = sqlc.ListPendingActivationsRow
+	UserInList    = sqlc.ListUsersRow
 )
 
 const (
