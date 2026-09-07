@@ -1,5 +1,5 @@
 {{ define "admin-difficulty-selector" }}
-<section id="admin-difficulty-selector">
+<section id="admin-difficulty-selector" class="admin-difficulty-selector">
   <h2>Difficulté</h2>
   <label for="difficulty">Difficultés disponibles</label>
   <select id="difficulty" name="difficulty"{{ if .Form }} form="{{ .Form }}"{{ end }} required>
@@ -13,11 +13,11 @@
   <form hx-post="/admin/difficulties" hx-target="#admin-difficulty-selector" hx-swap="outerHTML">
     {{ if .Form }}<input type="hidden" name="problem-form" value="{{ .Form }}">{{ end }}
     <div>
-      <label for="difficulty-name">Nom</label>
+      <label for="difficulty-name">Nom de la difficulté</label>
       <input id="difficulty-name" name="name" maxlength="20" required />
     </div>
     <div>
-      <label for="difficulty-points">Points</label>
+      <label for="difficulty-points">Nombre de points</label>
       <input id="difficulty-points" name="points" type="number" required />
     </div>
     <button class="btn" type="submit">Ajouter</button>

@@ -679,6 +679,39 @@ footer h4 {
   flex-shrink: 0;
 }
 
+.admin-difficulty-selector {
+  margin-top: 2rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--color-tertiary);
+  border: var(--border-container-size) var(--border-color) solid;
+}
+
+.admin-difficulty-selector h2 {
+  margin-bottom: 0;
+}
+
+.admin-difficulty-selector form>div {
+  min-width: min(12rem, 100%);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-difficulty-selector form {
+  flex-wrap: wrap;
+  align-items: end;
+}
+
+.admin-difficulty-selector input,
+.admin-difficulty-selector select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
