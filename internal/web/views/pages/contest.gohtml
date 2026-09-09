@@ -1,6 +1,6 @@
 {{ define "heading" }}
 <div class="content">
-  <h2>Problèmes</h2>
+  <h2>Problemes</h2>
   <p>
     Les différents problèmes de la compétition sont listés ici. Vous pouvez y participer dans l'ordre que vous voulez.
   </p>
@@ -18,7 +18,7 @@
     {{ $contest := .Page.Contest }}
     {{ range $p := .Page.Problems }}
     <article>
-      <h3>{{ $p.Problem.Name }}</h3>
+      <h3>{{ $p.Problem.Name | salmond }}</h3>
       <p class="subtitle">Par {{ $p.Problem.Author }}</p>
       <p class="subtitle">Difficulté : {{ $p.Difficulty.Name }}</p>
       <div class="btns">

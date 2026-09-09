@@ -800,7 +800,7 @@ type adminProblemFormPage struct {
 
 func (s *Server) getAdminProblemNew(w http.ResponseWriter, r *http.Request) {
 	page := adminProblemFormPage{
-		Title: "Nouveau problème", Action: "/admin/problems/new", Submit: "Créer le problème",
+		Title: "Nouveau probleme", Action: "/admin/problems/new", Submit: "Créer le problème",
 		SelectContest: true, Parts: "1", PointsMultiplier: "1", PointsAdder: "0",
 	}
 	if !s.prepareAdminProblemForm(w, r, &page) {
@@ -811,7 +811,7 @@ func (s *Server) getAdminProblemNew(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) postAdminProblemNew(w http.ResponseWriter, r *http.Request) {
 	page := adminProblemFormPage{
-		Title: "Nouveau problème", Action: "/admin/problems/new", Submit: "Créer le problème",
+		Title: "Nouveau probleme", Action: "/admin/problems/new", Submit: "Créer le problème",
 		SelectContest: true,
 	}
 	s.readAdminProblemForm(r, &page)
@@ -948,7 +948,7 @@ func (s *Server) renderAdminProblemFormError(w http.ResponseWriter, r *http.Requ
 
 func editProblemFormPage(problem app.ProblemDetail) adminProblemFormPage {
 	return adminProblemFormPage{
-		Title: "Modifier le problème", Action: "/admin/problems/" + problem.Problem.Slug + "/edit", Submit: "Enregistrer",
+		Title: "Modifier le probleme", Action: "/admin/problems/" + problem.Problem.Slug + "/edit", Submit: "Enregistrer",
 		ContestSlug: problem.Contest.Slug, ContestName: problem.Contest.Name,
 		Slug: problem.Problem.Slug, Name: problem.Problem.Name, Author: problem.Problem.Author,
 		Parts:            strconv.FormatInt(problem.Problem.Parts, 10),

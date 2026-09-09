@@ -1,6 +1,6 @@
 {{ define "content" }}
 <main class="larger">
-	<h1>Génération — {{ .Page.Run.ContestName }}</h1>
+	<h1>Generation — {{ .Page.Run.ContestName | salmond }}</h1>
 	<p>{{ .Page.Run.Status }} · {{ .Page.Run.Source }} · {{ .Page.Run.Mode }} · {{ .Page.Run.CreatedAt }}</p>
 	<p>{{ .Page.Run.Succeeded }} réussies · {{ .Page.Run.Running }} en cours · {{ .Page.Run.Queued }} en attente · {{ .Page.Run.Failed }} en échec · {{ .Page.Run.Skipped }} ignorées</p>
 	<table>

@@ -1,7 +1,7 @@
 {{ define "heading" }}
 <div class="content grid">
   <div>
-    <h2>{{ with .Page.Contest }}{{ .Name }}{{ else }}Compétition de programmation{{ end }}</h2>
+    <h2>{{ with .Page.Contest }}{{ .Name | salmond }}{{ else }}Competition de programmation{{ end }}</h2>
     <p>
       {{ .Config.MainText }}
     </p>

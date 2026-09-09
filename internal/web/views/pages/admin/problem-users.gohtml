@@ -1,6 +1,6 @@
 {{ define "content" }}
 <main class="larger">
-	<h1>Utilisateurs complets — {{ .Page.Problem.Problem.Name }}</h1>
+	<h1>Utilisateurs complets — {{ .Page.Problem.Problem.Name | salmond }}</h1>
 	<ul>
 		{{ range .Page.Users }}<li><a href="/admin/users/{{ .ID }}/problems">{{ .Username }}</a>{{ if .Admin }} · Administrateur{{ end }}</li>
 		{{ else }}<li>Aucun utilisateur ne possède toutes les données.</li>{{ end }}

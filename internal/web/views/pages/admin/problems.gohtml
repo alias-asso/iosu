@@ -1,17 +1,17 @@
 {{ define "content" }}
 <main class="larger">
-	<h1>Problèmes</h1>
+	<h1>Problemes</h1>
 	<div class="btns">
 		<a class="btn btn--large" href="/admin/problems/new">Nouveau problème</a>
 	</div>
 	{{ range .Page }}
 	<section class="admin-problem-section">
-		<h2>{{ .Contest.Name }}</h2>
+		<h2>{{ .Contest.Name | salmond }}</h2>
 		<div class="article__container admin-problem-list">
 			{{ range .Problems }}
 			<article class="admin-problem-list__item">
 				<div class="admin-problem-list__details">
-					<h3>{{ .Problem.Name }}</h3>
+					<h3>{{ .Problem.Name | salmond }}</h3>
 					<p class="subtitle">{{ .Difficulty.Name }} · {{ .Problem.Parts }} {{ if eq .Problem.Parts 1 }}partie{{ else }}parties{{ end }}</p>
 					<ul class="admin-problem-list__parts">
 						{{ range .PartFiles }}

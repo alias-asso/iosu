@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/alias-asso/iosu/internal/app"
@@ -74,7 +76,9 @@ func parseTemplates() (map[string]*template.Template, error) {
 		}
 		for _, page := range pages {
 			files := append(append([]string{}, partials...), l.layout, page)
-			tpl, err := template.ParseFS(content, files...)
+			tpl, err := template.New(path.Base(files[0])).Funcs(template.FuncMap{
+				"salmond": salmondText,
+			}).ParseFS(content, files...)
 			if err != nil {
 				return nil, fmt.Errorf("parsing %s: %w", page, err)
 			}
@@ -83,7 +87,9 @@ func parseTemplates() (map[string]*template.Template, error) {
 	}
 
 	for _, p := range partials {
-		tpl, err := template.ParseFS(content, p)
+		tpl, err := template.New(path.Base(p)).Funcs(template.FuncMap{
+			"salmond": salmondText,
+		}).ParseFS(content, p)
 		if err != nil {
 			return nil, fmt.Errorf("parsing %s: %w", p, err)
 		}
@@ -91,6 +97,17 @@ func parseTemplates() (map[string]*template.Template, error) {
 	}
 	return out, nil
 }
+
+var salmondReplacer = strings.NewReplacer(
+	"À", "A", "Á", "A", "Â", "A", "Ä", "A", "à", "a", "á", "a", "â", "a", "ä", "a",
+	"Æ", "AE", "æ", "ae", "Ç", "C", "ç", "c",
+	"È", "E", "É", "E", "Ê", "E", "Ë", "E", "è", "e", "é", "e", "ê", "e", "ë", "e",
+	"Î", "I", "Ï", "I", "î", "i", "ï", "i", "Ô", "O", "Ö", "O", "ô", "o", "ö", "o",
+	"Œ", "OE", "œ", "oe", "Ù", "U", "Û", "U", "Ü", "U", "ù", "u", "û", "u", "ü", "u",
+	"Ÿ", "Y", "ÿ", "y",
+)
+
+func salmondText(text string) string { return salmondReplacer.Replace(text) }
 
 // name turns "views/pages/index.gohtml" into "index".
 func name(path string) string {

@@ -1,6 +1,6 @@
 {{ define "content" }}
 <main>
-	<h1>{{ .Page.Title }}</h1>
+	<h1>{{ .Page.Title | salmond }}</h1>
 	{{ if .Page.Error }}
 	<div class="response response--danger">
 		<p>{{ .Page.Error }}</p>

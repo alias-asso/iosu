@@ -1,6 +1,5 @@
 {{ define "generation-status" }}
 <section id="generation-status" class="admin-generation-status"{{ if .Active }} hx-get="/admin/generations/status" hx-trigger="every 2s" hx-swap="outerHTML"{{ end }}>
-	<h2>Générations</h2>
 	{{ range .Runs }}
 	<article>
 		<p><a href="/admin/generations/{{ .ID }}"><strong>{{ .ContestName }}</strong> · {{ .Status }}</a></p>

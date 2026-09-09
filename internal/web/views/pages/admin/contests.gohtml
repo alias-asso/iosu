@@ -8,7 +8,7 @@
 		{{ range .Page }}
 		<article class="admin-contest-list__item">
 			<div>
-				<h3>{{ .Name }}</h3>
+				<h3>{{ .Name | salmond }}</h3>
 				<p class="subtitle">{{ if .Unlisted }}Non listé{{ else }}Listé{{ end }}</p>
 			</div>
 			<div class="btns btns--no-marge admin-contest-list__actions">
