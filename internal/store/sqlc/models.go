@@ -16,19 +16,43 @@ type ActivationCode struct {
 }
 
 type Contest struct {
-	ID          int64
-	Slug        string
-	Name        string
-	Description string
-	StartAt     int64
-	EndAt       int64
-	Unlisted    bool
+	ID           int64
+	Slug         string
+	Name         string
+	Description  string
+	StartAt      int64
+	EndAt        int64
+	Unlisted     bool
+	AutoGenerate bool
 }
 
 type Difficulty struct {
 	ID     int64
 	Name   string
 	Points int64
+}
+
+type GenerationRun struct {
+	ID         int64
+	ContestID  int64
+	Source     string
+	Mode       string
+	Status     string
+	CreatedAt  int64
+	StartedAt  sql.NullInt64
+	FinishedAt sql.NullInt64
+}
+
+type GenerationTask struct {
+	ID         int64
+	RunID      int64
+	ProblemID  int64
+	UserID     int64
+	Status     string
+	Error      string
+	CreatedAt  int64
+	StartedAt  sql.NullInt64
+	FinishedAt sql.NullInt64
 }
 
 type Problem struct {

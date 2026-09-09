@@ -1,6 +1,8 @@
 # Copy to /etc/iosu/config.toml and fill in. Never commit the real file.
 # Any value can also be supplied via the environment, which wins over this
-# file: IOSU_PORT, IOSU_JWT_KEY, IOSU_ADMIN_PASSWORD, IOSU_DATA_DIR, IOSU_DB_PATH.
+# file: IOSU_PORT, IOSU_JWT_KEY, IOSU_ADMIN_PASSWORD, IOSU_DATA_DIR, IOSU_DB_PATH,
+# IOSU_GENERATION_PARALLEL_RUNS, IOSU_GENERATION_TIMEOUT_SECONDS,
+# IOSU_GENERATION_MAX_OUTPUT_BYTES.
 
 server_port = "8990"
 
@@ -13,6 +15,13 @@ default_admin_password = "CHANGE-ME"
 
 # Where contest directories live: <data_directory>/<contest-slug>/<problem-slug>/partN.md
 data_directory = "/var/iosu/data"
+
+# Problem generators live next to partN.md. They must be executable and named
+# generate_input and generate_outputN. Outputs receive the generated input as
+# their first argument, whose maximum size also depends on the operating system.
+generation_parallel_runs = 4
+generation_timeout_seconds = 30
+generation_max_output_bytes = 131072
 
 db_path = "/var/iosu/db.sqlite"
 

@@ -183,11 +183,14 @@ func (a *App) Register(ctx context.Context, username, email string) (string, err
 		if err != nil {
 			return err
 		}
-		return q.CreateActivationCode(ctx, sqlc.CreateActivationCodeParams{
+		if err := q.CreateActivationCode(ctx, sqlc.CreateActivationCodeParams{
 			Code:      code,
 			UserID:    user.ID,
 			ExpiresAt: a.now().Add(activationTTL).Unix(),
-		})
+		}); err != nil {
+			return err
+		}
+		return a.enqueueAutomaticGeneration(ctx, q, user.ID)
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -195,6 +198,7 @@ func (a *App) Register(ctx context.Context, username, email string) (string, err
 		}
 		return "", err
 	}
+	a.wakeGenerator()
 	return code, nil
 }
 
@@ -217,16 +221,21 @@ func (a *App) RegisterWithPassword(ctx context.Context, username, email, passwor
 		return false, err
 	}
 	approved := !config.RegistrationRequiresApproval
-	_, err = a.store.CreateUser(ctx, sqlc.CreateUserParams{
-		Username:     username,
-		Email:        email,
-		PasswordHash: string(hash),
-		Activated:    approved,
-		Admin:        false,
-		CreatedAt:    a.now().Unix(),
+	err = a.store.Tx(ctx, func(q *sqlc.Queries) error {
+		user, err := q.CreateUser(ctx, sqlc.CreateUserParams{
+			Username: username, Email: email, PasswordHash: string(hash),
+			Activated: approved, Admin: false, CreatedAt: a.now().Unix(),
+		})
+		if err != nil {
+			return err
+		}
+		return a.enqueueAutomaticGeneration(ctx, q, user.ID)
 	})
 	if isUniqueViolation(err) {
 		return false, ErrUserExists
+	}
+	if err == nil {
+		a.wakeGenerator()
 	}
 	return approved, err
 }
@@ -318,12 +327,16 @@ func (a *App) BatchRegister(ctx context.Context, csvContent string) (int, error)
 			}); err != nil {
 				return err
 			}
+			if err := a.enqueueAutomaticGeneration(ctx, q, user.ID); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
 	if err != nil {
 		return 0, err
 	}
+	a.wakeGenerator()
 	return len(accounts), nil
 }
 

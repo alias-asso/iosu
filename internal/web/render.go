@@ -58,7 +58,13 @@ func (s *Server) renderPartial(w http.ResponseWriter, partial string, data any) 
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := tpl.Execute(w, data); err != nil {
+	var err error
+	if tpl.Lookup(partial) != nil {
+		err = tpl.ExecuteTemplate(w, partial, data)
+	} else {
+		err = tpl.Execute(w, data)
+	}
+	if err != nil {
 		log.Printf("rendering partials/%s: %v", partial, err)
 	}
 }
@@ -104,16 +110,19 @@ var messages = map[error]struct {
 	app.ErrContestFinished:   {"Le concours est terminé.", http.StatusForbidden},
 	app.ErrInvalidTimeRange:  {"La date de fin doit être postérieure à la date de début.", http.StatusBadRequest},
 
-	app.ErrProblemNotFound:    {"Problème introuvable.", http.StatusNotFound},
-	app.ErrProblemExists:      {"Un problème utilise déjà cet identifiant.", http.StatusConflict},
-	app.ErrDifficultyNotFound: {"Difficulté introuvable.", http.StatusBadRequest},
-	app.ErrDifficultyExists:   {"Cette difficulté existe déjà.", http.StatusConflict},
-	app.ErrInvalidSlug:        {"Identifiant invalide.", http.StatusBadRequest},
-	app.ErrInvalidName:        {"Nom invalide.", http.StatusBadRequest},
-	app.ErrInvalidPart:        {"Cette partie n'est pas accessible.", http.StatusBadRequest},
-	app.ErrAlreadySolved:      {"Vous avez déjà résolu cette partie.", http.StatusBadRequest},
-	app.ErrInputNotFound:      {"Aucun input n'a été généré pour vous sur ce problème.", http.StatusNotFound},
-	app.ErrOutputNotFound:     {"Aucune réponse attendue n'est enregistrée pour vous sur ce problème.", http.StatusNotFound},
+	app.ErrProblemNotFound:       {"Problème introuvable.", http.StatusNotFound},
+	app.ErrProblemExists:         {"Un problème utilise déjà cet identifiant.", http.StatusConflict},
+	app.ErrDifficultyNotFound:    {"Difficulté introuvable.", http.StatusBadRequest},
+	app.ErrDifficultyExists:      {"Cette difficulté existe déjà.", http.StatusConflict},
+	app.ErrInvalidSlug:           {"Identifiant invalide.", http.StatusBadRequest},
+	app.ErrInvalidName:           {"Nom invalide.", http.StatusBadRequest},
+	app.ErrInvalidPart:           {"Cette partie n'est pas accessible.", http.StatusBadRequest},
+	app.ErrAlreadySolved:         {"Vous avez déjà résolu cette partie.", http.StatusBadRequest},
+	app.ErrInputNotFound:         {"Aucun input n'a été généré pour vous sur ce problème.", http.StatusNotFound},
+	app.ErrOutputNotFound:        {"Aucune réponse attendue n'est enregistrée pour vous sur ce problème.", http.StatusNotFound},
+	app.ErrInvalidGenerationMode: {"Mode de génération invalide.", http.StatusBadRequest},
+	app.ErrNoUsersSelected:       {"Sélectionnez au moins un utilisateur.", http.StatusBadRequest},
+	app.ErrGenerationRunNotFound: {"Génération introuvable.", http.StatusNotFound},
 }
 
 func describe(err error) (string, int) {

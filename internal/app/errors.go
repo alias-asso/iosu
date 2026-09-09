@@ -41,4 +41,8 @@ var (
 	ErrInputNotFound      = errors.New("no input generated for this user")
 	ErrOutputNotFound     = errors.New("no expected output for this user")
 	ErrPartCountMismatch  = errors.New("number of outputs does not match the problem's part count")
+
+	ErrInvalidGenerationMode = errors.New("invalid generation mode")
+	ErrNoUsersSelected       = errors.New("no users selected")
+	ErrGenerationRunNotFound = errors.New("generation run not found")
 )

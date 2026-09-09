@@ -20,11 +20,67 @@ JOIN difficulties ON difficulties.id = problems.difficulty_id
 WHERE problems.slug = ?;
 
 -- name: ListProblemsByContest :many
-SELECT sqlc.embed(problems), sqlc.embed(difficulties)
+SELECT sqlc.embed(problems), sqlc.embed(difficulties), CAST((
+    SELECT COUNT(*)
+    FROM users u
+    WHERE EXISTS (
+        SELECT 1 FROM problem_inputs pi
+        WHERE pi.problem_id = problems.id AND pi.user_id = u.id
+    ) AND (
+        SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+        WHERE po.problem_id = problems.id AND po.user_id = u.id
+          AND po.part BETWEEN 1 AND problems.parts
+    ) = problems.parts
+) AS INTEGER) AS complete_users
 FROM problems
 JOIN difficulties ON difficulties.id = problems.difficulty_id
 WHERE problems.contest_id = ?
 ORDER BY difficulties.points, problems.name;
+
+-- name: HasCompleteProblemData :one
+SELECT CAST(EXISTS (
+    SELECT 1
+    FROM problems p
+    WHERE p.id = sqlc.arg('problem_id')
+      AND EXISTS (
+        SELECT 1 FROM problem_inputs pi
+        WHERE pi.problem_id = p.id AND pi.user_id = sqlc.arg('user_id')
+      )
+      AND (
+          SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+          WHERE po.problem_id = p.id AND po.user_id = sqlc.arg('user_id')
+            AND po.part BETWEEN 1 AND p.parts
+      ) = p.parts
+) AS BOOLEAN);
+
+-- name: ListCompleteProblemsByUser :many
+SELECT sqlc.embed(problems), sqlc.embed(contests), sqlc.embed(difficulties)
+FROM problems
+JOIN contests ON contests.id = problems.contest_id
+JOIN difficulties ON difficulties.id = problems.difficulty_id
+WHERE EXISTS (
+    SELECT 1 FROM problem_inputs pi
+    WHERE pi.problem_id = problems.id AND pi.user_id = sqlc.arg('user_id')
+) AND (
+    SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+    WHERE po.problem_id = problems.id AND po.user_id = sqlc.arg('user_id')
+      AND po.part BETWEEN 1 AND problems.parts
+) = problems.parts
+ORDER BY contests.start_at DESC, difficulties.points, problems.name;
+
+-- name: ListCompleteUsersByProblem :many
+SELECT users.*
+FROM users
+JOIN problems ON problems.id = ?
+WHERE EXISTS (
+    SELECT 1 FROM problem_inputs pi
+    WHERE pi.problem_id = problems.id AND pi.user_id = users.id
+) AND (
+    SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+    WHERE po.problem_id = problems.id AND po.user_id = users.id
+      AND po.part BETWEEN 1 AND problems.parts
+) = problems.parts
+ORDER BY users.username;
 
 -- name: UpdateProblem :execrows
 UPDATE problems SET

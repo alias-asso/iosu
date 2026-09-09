@@ -33,6 +33,10 @@
 			<input id="unlisted" name="unlisted" type="checkbox"{{ if .Page.Unlisted }} checked{{ end }}>
 			Ne pas afficher ce concours dans les archives
 		</label>
+		<label class="form--checkbox" for="auto-generate">
+			<input id="auto-generate" name="auto-generate" type="checkbox"{{ if .Page.AutoGenerate }} checked{{ end }}>
+			Générer automatiquement les données des nouveaux comptes
+		</label>
 		<button class="btn" type="submit">{{ .Page.Submit }}</button>
 	</form>
 </main>

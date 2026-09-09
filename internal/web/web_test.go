@@ -642,6 +642,73 @@ func TestAdminUsersImportCSV(t *testing.T) {
 	}
 }
 
+func TestAdminGenerationControlsAndDetails(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	alice := ts.user("alice")
+
+	rec := ts.get("/admin/users", &admin)
+	for _, want := range []string{
+		`action="/admin/generations"`, `name="contest"`, `name="mode"`,
+		`name="user" value="` + strconv.FormatInt(alice.ID, 10) + `"`,
+		`href="/admin/users/` + strconv.FormatInt(alice.ID, 10) + `/problems"`,
+		"1 problème complet",
+	} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("users page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+
+	rec = ts.postForm("/admin/generations", url.Values{
+		"contest": {"alpha"}, "mode": {"missing"},
+		"user": {strconv.FormatInt(alice.ID, 10)},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("queue status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get(rec.Header().Get("Location"), &admin)
+	for _, want := range []string{"Terminée", "Compléter uniquement", "Ignorée", "Alice"} {
+		if !strings.Contains(strings.ToLower(rec.Body.String()), strings.ToLower(want)) {
+			t.Errorf("run page does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+	rec = ts.get("/admin/generations/status", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Alpha") {
+		t.Fatalf("status fragment: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get("/admin/generations", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Alpha") || strings.Contains(rec.Body.String(), `name="user"`) {
+		t.Fatalf("generation list page: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get("/admin/users/"+strconv.FormatInt(alice.ID, 10)+"/problems", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "One") {
+		t.Fatalf("user problems: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get("/admin/problems/one/users", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "alice") {
+		t.Fatalf("problem users: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAdminContestAutoGenerationOption(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	start := time.Now().Add(time.Hour)
+	rec := ts.postForm("/admin/contests/new", url.Values{
+		"slug": {"beta"}, "name": {"Beta"},
+		"start-at":      {start.Format(adminContestTimeLayout)},
+		"end-at":        {start.Add(time.Hour).Format(adminContestTimeLayout)},
+		"auto-generate": {"on"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("create contest: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	contest, err := ts.app.Contest(t.Context(), "beta")
+	if err != nil || !contest.AutoGenerate {
+		t.Fatalf("contest=%+v err=%v", contest, err)
+	}
+}
+
 func TestAdminUserPromotionAndDeletionRequireConfirmation(t *testing.T) {
 	ts := newTestServer(t)
 	admin := ts.admin("root")

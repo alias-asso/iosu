@@ -17,16 +17,19 @@ import (
 // Rows returned by the store are used as-is rather than copied into a parallel
 // set of domain structs.
 type (
-	User          = sqlc.User
-	Contest       = sqlc.Contest
-	Problem       = sqlc.Problem
-	Difficulty    = sqlc.Difficulty
-	SiteConfig    = sqlc.SiteConfig
-	ProblemDetail = sqlc.GetProblemBySlugRow
-	ProblemInList = sqlc.ListProblemsByContestRow
-	Leaderboarder = sqlc.LeaderboardRow
-	PendingUser   = sqlc.ListPendingActivationsRow
-	UserInList    = sqlc.ListUsersRow
+	User            = sqlc.User
+	Contest         = sqlc.Contest
+	Problem         = sqlc.Problem
+	Difficulty      = sqlc.Difficulty
+	SiteConfig      = sqlc.SiteConfig
+	ProblemDetail   = sqlc.GetProblemBySlugRow
+	ProblemInList   = sqlc.ListProblemsByContestRow
+	Leaderboarder   = sqlc.LeaderboardRow
+	PendingUser     = sqlc.ListPendingActivationsRow
+	UserInList      = sqlc.ListUsersRow
+	GenerationRun   = sqlc.ListGenerationRunsRow
+	GenerationTask  = sqlc.ListGenerationTasksByRunRow
+	CompleteProblem = sqlc.ListCompleteProblemsByUserRow
 )
 
 const (
@@ -46,13 +49,14 @@ const (
 var bcryptCost = 12
 
 type App struct {
-	store   *store.Store
-	dataDir string
-	now     func() time.Time // swapped in tests
+	store          *store.Store
+	dataDir        string
+	now            func() time.Time // swapped in tests
+	generationWake chan struct{}
 }
 
 func New(s *store.Store, dataDir string) *App {
-	return &App{store: s, dataDir: dataDir, now: time.Now}
+	return &App{store: s, dataDir: dataDir, now: time.Now, generationWake: make(chan struct{}, 64)}
 }
 
 // Store exposes the underlying store for the few callers that legitimately

@@ -622,6 +622,39 @@ footer h4 {
   box-sizing: border-box;
 }
 
+.admin-generation-form {
+  max-width: 100%;
+  margin-bottom: 2rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.admin-generation-form>div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-generation-status {
+  margin-bottom: 2rem;
+}
+
+.admin-generation-status article {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--color-tertiary);
+  border: var(--border-container-size) var(--border-color) solid;
+}
+
+.admin-generation-status p {
+  margin-bottom: 0.25rem;
+}
+
+.generation-error {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .admin-user-list__item {
   min-width: 0;
   display: flex;

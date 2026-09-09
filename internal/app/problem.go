@@ -147,6 +147,34 @@ func (a *App) ProblemPartFiles(contestSlug, problemSlug string, parts int64) ([]
 	return files, nil
 }
 
+type GeneratorFile struct {
+	Name       string
+	Present    bool
+	Executable bool
+}
+
+func (a *App) ProblemGeneratorFiles(contestSlug, problemSlug string, parts int64) ([]GeneratorFile, error) {
+	names := make([]string, 0, parts+1)
+	names = append(names, "generate_input")
+	for i := int64(1); i <= parts; i++ {
+		names = append(names, fmt.Sprintf("generate_output%d", i))
+	}
+	files := make([]GeneratorFile, len(names))
+	for i, name := range names {
+		files[i].Name = name
+		info, err := os.Stat(filepath.Join(a.problemDir(contestSlug, problemSlug), name))
+		switch {
+		case err == nil:
+			files[i].Present = info.Mode().IsRegular()
+			files[i].Executable = files[i].Present && info.Mode().Perm()&0o111 != 0
+		case errors.Is(err, os.ErrNotExist):
+		default:
+			return nil, err
+		}
+	}
+	return files, nil
+}
+
 func (a *App) DeleteProblem(ctx context.Context, slug string) error {
 	problem, err := a.Problem(ctx, slug)
 	if err != nil {

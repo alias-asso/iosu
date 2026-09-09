@@ -3,8 +3,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
+	"time"
 
 	"github.com/alias-asso/iosu/internal/app"
 	"github.com/alias-asso/iosu/internal/config"
@@ -29,6 +31,16 @@ func main() {
 
 	a := app.New(db, cfg.DataDir)
 	ctx := context.Background()
+	go func() {
+		err := a.RunGenerator(ctx, app.GenerationConfig{
+			ParallelRuns:   cfg.GenerationParallelRuns,
+			Timeout:        time.Duration(cfg.GenerationTimeoutSeconds) * time.Second,
+			MaxOutputBytes: cfg.GenerationMaxOutputBytes,
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("problem data generator: %v", err)
+		}
+	}()
 
 	if created, err := a.EnsureAdmin(ctx, cfg.DefaultAdminPassword); err != nil {
 		log.Fatalf("creating the admin account: %v", err)

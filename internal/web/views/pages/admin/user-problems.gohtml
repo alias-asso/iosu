@@ -1,0 +1,12 @@
+{{ define "content" }}
+<main class="larger">
+	<h1>Problèmes complets de {{ .Page.User.Username }}</h1>
+	{{ range .Page.Groups }}
+	<section>
+		<h2>{{ .Contest.Name }}</h2>
+		<ul>{{ range .Problems }}<li>{{ .Problem.Name }} · {{ .Difficulty.Name }}</li>{{ end }}</ul>
+	</section>
+	{{ else }}<p>Aucune donnée de problème complète.</p>{{ end }}
+	<p><a class="btn" href="/admin/users">Retour aux utilisateurs</a></p>
+</main>
+{{ end }}

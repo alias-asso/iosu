@@ -25,12 +25,13 @@ type ArchiveEntry struct {
 }
 
 type CreateContestInput struct {
-	Slug        string
-	Name        string
-	Description string
-	StartTime   time.Time
-	EndTime     time.Time
-	Unlisted    bool
+	Slug         string
+	Name         string
+	Description  string
+	StartTime    time.Time
+	EndTime      time.Time
+	Unlisted     bool
+	AutoGenerate bool
 }
 
 // CreateContest records a contest and creates its directory under the data
@@ -47,12 +48,13 @@ func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest
 	}
 
 	contest, err := a.store.CreateContest(ctx, sqlc.CreateContestParams{
-		Slug:        in.Slug,
-		Name:        in.Name,
-		Description: in.Description,
-		StartAt:     in.StartTime.Unix(),
-		EndAt:       in.EndTime.Unix(),
-		Unlisted:    in.Unlisted,
+		Slug:         in.Slug,
+		Name:         in.Name,
+		Description:  in.Description,
+		StartAt:      in.StartTime.Unix(),
+		EndAt:        in.EndTime.Unix(),
+		Unlisted:     in.Unlisted,
+		AutoGenerate: in.AutoGenerate,
 	})
 	if err != nil {
 		if isUniqueViolation(err) {

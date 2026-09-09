@@ -303,14 +303,27 @@ SELECT users.id, users.username, users.email, users.password_hash, users.activat
     WHERE user_id = users.id AND used_at IS NULL
     ORDER BY expires_at DESC
     LIMIT 1
-), '') AS TEXT) AS activation_code
+), '') AS TEXT) AS activation_code,
+CAST((
+    SELECT COUNT(*)
+    FROM problems p
+    WHERE EXISTS (
+        SELECT 1 FROM problem_inputs pi
+        WHERE pi.problem_id = p.id AND pi.user_id = users.id
+    ) AND (
+        SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+        WHERE po.problem_id = p.id AND po.user_id = users.id
+          AND po.part BETWEEN 1 AND p.parts
+    ) = p.parts
+) AS INTEGER) AS complete_problems
 FROM users
 ORDER BY activated ASC, username ASC
 `
 
 type ListUsersRow struct {
-	User           User
-	ActivationCode string
+	User             User
+	ActivationCode   string
+	CompleteProblems int64
 }
 
 func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
@@ -331,6 +344,7 @@ func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 			&i.User.Admin,
 			&i.User.CreatedAt,
 			&i.ActivationCode,
+			&i.CompleteProblems,
 		); err != nil {
 			return nil, err
 		}

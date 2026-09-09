@@ -349,12 +349,14 @@ type adminConfigPage struct {
 
 type adminUserListItem struct {
 	app.User
-	ActivationLink string
+	ActivationLink   string
+	CompleteProblems int64
 }
 
 type adminUsersPage struct {
-	Users []adminUserListItem
-	Error string
+	Users    []adminUserListItem
+	Contests []app.Contest
+	Error    string
 }
 
 func (s *Server) getAdminUsers(w http.ResponseWriter, r *http.Request) {
@@ -394,16 +396,21 @@ func (s *Server) renderAdminUsers(w http.ResponseWriter, r *http.Request, messag
 	}
 	page := make([]adminUserListItem, 0, len(users))
 	for _, user := range users {
-		item := adminUserListItem{User: user.User}
+		item := adminUserListItem{User: user.User, CompleteProblems: user.CompleteProblems}
 		if user.ActivationCode != "" {
 			item.ActivationLink = "/activate/" + user.ActivationCode
 		}
 		page = append(page, item)
 	}
+	contests, err := s.app.Contests(r.Context())
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
 	if status != http.StatusOK {
 		w.WriteHeader(status)
 	}
-	s.render(w, r, "admin/users", adminUsersPage{Users: page, Error: message})
+	s.render(w, r, "admin/users", adminUsersPage{Users: page, Contests: contests, Error: message})
 }
 
 type adminUserFormPage struct {
@@ -564,16 +571,17 @@ func (s *Server) getAdminContests(w http.ResponseWriter, r *http.Request) {
 const adminContestTimeLayout = "2006-01-02T15:04"
 
 type adminContestFormPage struct {
-	Title       string
-	Action      string
-	Submit      string
-	Slug        string
-	Name        string
-	Description string
-	StartAt     string
-	EndAt       string
-	Unlisted    bool
-	Error       string
+	Title        string
+	Action       string
+	Submit       string
+	Slug         string
+	Name         string
+	Description  string
+	StartAt      string
+	EndAt        string
+	Unlisted     bool
+	AutoGenerate bool
+	Error        string
 }
 
 func (s *Server) getAdminContestNew(w http.ResponseWriter, r *http.Request) {
@@ -590,12 +598,13 @@ func (s *Server) postAdminContestNew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.app.CreateContest(r.Context(), app.CreateContestInput{
-		Slug:        page.Slug,
-		Name:        page.Name,
-		Description: page.Description,
-		StartTime:   startAt,
-		EndTime:     endAt,
-		Unlisted:    page.Unlisted,
+		Slug:         page.Slug,
+		Name:         page.Name,
+		Description:  page.Description,
+		StartTime:    startAt,
+		EndTime:      endAt,
+		Unlisted:     page.Unlisted,
+		AutoGenerate: page.AutoGenerate,
 	}); err != nil {
 		s.renderAdminContestFormError(w, r, page, err)
 		return
@@ -623,13 +632,14 @@ func (s *Server) postAdminContestEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.app.UpdateContest(r.Context(), sqlc.UpdateContestParams{
-		ID:          contest.ID,
-		Slug:        sql.NullString{String: page.Slug, Valid: true},
-		Name:        sql.NullString{String: page.Name, Valid: true},
-		Description: sql.NullString{String: page.Description, Valid: true},
-		StartAt:     sql.NullInt64{Int64: startAt.Unix(), Valid: true},
-		EndAt:       sql.NullInt64{Int64: endAt.Unix(), Valid: true},
-		Unlisted:    sql.NullBool{Bool: page.Unlisted, Valid: true},
+		ID:           contest.ID,
+		Slug:         sql.NullString{String: page.Slug, Valid: true},
+		Name:         sql.NullString{String: page.Name, Valid: true},
+		Description:  sql.NullString{String: page.Description, Valid: true},
+		StartAt:      sql.NullInt64{Int64: startAt.Unix(), Valid: true},
+		EndAt:        sql.NullInt64{Int64: endAt.Unix(), Valid: true},
+		Unlisted:     sql.NullBool{Bool: page.Unlisted, Valid: true},
+		AutoGenerate: sql.NullBool{Bool: page.AutoGenerate, Valid: true},
 	}); err != nil {
 		s.renderAdminContestFormError(w, r, page, err)
 		return
@@ -643,15 +653,16 @@ func (s *Server) adminContestForm(w http.ResponseWriter, r *http.Request, action
 		return adminContestFormPage{}, time.Time{}, time.Time{}, false
 	}
 	page := adminContestFormPage{
-		Title:       "Modifier le concours",
-		Action:      action,
-		Submit:      "Enregistrer",
-		Slug:        r.FormValue("slug"),
-		Name:        r.FormValue("name"),
-		Description: r.FormValue("description"),
-		StartAt:     r.FormValue("start-at"),
-		EndAt:       r.FormValue("end-at"),
-		Unlisted:    r.Form.Has("unlisted"),
+		Title:        "Modifier le concours",
+		Action:       action,
+		Submit:       "Enregistrer",
+		Slug:         r.FormValue("slug"),
+		Name:         r.FormValue("name"),
+		Description:  r.FormValue("description"),
+		StartAt:      r.FormValue("start-at"),
+		EndAt:        r.FormValue("end-at"),
+		Unlisted:     r.Form.Has("unlisted"),
+		AutoGenerate: r.Form.Has("auto-generate"),
 	}
 	if action == "/admin/contests/new" {
 		page.Title = "Nouveau concours"
@@ -681,15 +692,16 @@ func (s *Server) renderAdminContestFormError(w http.ResponseWriter, r *http.Requ
 
 func editContestFormPage(contest app.Contest) adminContestFormPage {
 	return adminContestFormPage{
-		Title:       "Modifier le concours",
-		Action:      "/admin/contests/" + contest.Slug + "/edit",
-		Submit:      "Enregistrer",
-		Slug:        contest.Slug,
-		Name:        contest.Name,
-		Description: contest.Description,
-		StartAt:     time.Unix(contest.StartAt, 0).Format(adminContestTimeLayout),
-		EndAt:       time.Unix(contest.EndAt, 0).Format(adminContestTimeLayout),
-		Unlisted:    contest.Unlisted,
+		Title:        "Modifier le concours",
+		Action:       "/admin/contests/" + contest.Slug + "/edit",
+		Submit:       "Enregistrer",
+		Slug:         contest.Slug,
+		Name:         contest.Name,
+		Description:  contest.Description,
+		StartAt:      time.Unix(contest.StartAt, 0).Format(adminContestTimeLayout),
+		EndAt:        time.Unix(contest.EndAt, 0).Format(adminContestTimeLayout),
+		Unlisted:     contest.Unlisted,
+		AutoGenerate: contest.AutoGenerate,
 	}
 }
 
@@ -711,9 +723,11 @@ func (s *Server) postAdminContestDelete(w http.ResponseWriter, r *http.Request) 
 }
 
 type adminProblemListItem struct {
-	Problem    app.Problem
-	Difficulty app.Difficulty
-	PartFiles  []adminProblemPartFile
+	Problem        app.Problem
+	Difficulty     app.Difficulty
+	PartFiles      []adminProblemPartFile
+	GeneratorFiles []app.GeneratorFile
+	CompleteUsers  int64
 }
 
 type adminProblemPartFile struct {
@@ -748,7 +762,13 @@ func (s *Server) getAdminProblems(w http.ResponseWriter, r *http.Request) {
 			}
 			item := adminProblemListItem{
 				Problem: problem.Problem, Difficulty: problem.Difficulty,
-				PartFiles: make([]adminProblemPartFile, len(files)),
+				PartFiles:     make([]adminProblemPartFile, len(files)),
+				CompleteUsers: problem.CompleteUsers,
+			}
+			item.GeneratorFiles, err = s.app.ProblemGeneratorFiles(contest.Slug, problem.Problem.Slug, problem.Problem.Parts)
+			if err != nil {
+				s.renderError(w, r, err)
+				return
 			}
 			for i, present := range files {
 				item.PartFiles[i] = adminProblemPartFile{Number: i + 1, Present: present}

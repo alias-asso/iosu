@@ -93,7 +93,7 @@ func (q *Queries) GetDifficultyByName(ctx context.Context, name string) (Difficu
 }
 
 const getProblemBySlug = `-- name: GetProblemBySlug :one
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests     ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -126,6 +126,7 @@ func (q *Queries) GetProblemBySlug(ctx context.Context, slug string) (GetProblem
 		&i.Contest.StartAt,
 		&i.Contest.EndAt,
 		&i.Contest.Unlisted,
+		&i.Contest.AutoGenerate,
 		&i.Difficulty.ID,
 		&i.Difficulty.Name,
 		&i.Difficulty.Points,
@@ -182,6 +183,147 @@ func (q *Queries) GetSolvedParts(ctx context.Context, arg GetSolvedPartsParams) 
 	return column_1, err
 }
 
+const hasCompleteProblemData = `-- name: HasCompleteProblemData :one
+SELECT CAST(EXISTS (
+    SELECT 1
+    FROM problems p
+    WHERE p.id = ?1
+      AND EXISTS (
+        SELECT 1 FROM problem_inputs pi
+        WHERE pi.problem_id = p.id AND pi.user_id = ?2
+      )
+      AND (
+          SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+          WHERE po.problem_id = p.id AND po.user_id = ?2
+            AND po.part BETWEEN 1 AND p.parts
+      ) = p.parts
+) AS BOOLEAN)
+`
+
+type HasCompleteProblemDataParams struct {
+	ProblemID int64
+	UserID    int64
+}
+
+func (q *Queries) HasCompleteProblemData(ctx context.Context, arg HasCompleteProblemDataParams) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasCompleteProblemData, arg.ProblemID, arg.UserID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const listCompleteProblemsByUser = `-- name: ListCompleteProblemsByUser :many
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, difficulties.id, difficulties.name, difficulties.points
+FROM problems
+JOIN contests ON contests.id = problems.contest_id
+JOIN difficulties ON difficulties.id = problems.difficulty_id
+WHERE EXISTS (
+    SELECT 1 FROM problem_inputs pi
+    WHERE pi.problem_id = problems.id AND pi.user_id = ?1
+) AND (
+    SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+    WHERE po.problem_id = problems.id AND po.user_id = ?1
+      AND po.part BETWEEN 1 AND problems.parts
+) = problems.parts
+ORDER BY contests.start_at DESC, difficulties.points, problems.name
+`
+
+type ListCompleteProblemsByUserRow struct {
+	Problem    Problem
+	Contest    Contest
+	Difficulty Difficulty
+}
+
+func (q *Queries) ListCompleteProblemsByUser(ctx context.Context, userID int64) ([]ListCompleteProblemsByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCompleteProblemsByUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCompleteProblemsByUserRow{}
+	for rows.Next() {
+		var i ListCompleteProblemsByUserRow
+		if err := rows.Scan(
+			&i.Problem.ID,
+			&i.Problem.ContestID,
+			&i.Problem.DifficultyID,
+			&i.Problem.Slug,
+			&i.Problem.Name,
+			&i.Problem.Author,
+			&i.Problem.Parts,
+			&i.Problem.PointsMultiplier,
+			&i.Problem.PointsAdder,
+			&i.Contest.ID,
+			&i.Contest.Slug,
+			&i.Contest.Name,
+			&i.Contest.Description,
+			&i.Contest.StartAt,
+			&i.Contest.EndAt,
+			&i.Contest.Unlisted,
+			&i.Contest.AutoGenerate,
+			&i.Difficulty.ID,
+			&i.Difficulty.Name,
+			&i.Difficulty.Points,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCompleteUsersByProblem = `-- name: ListCompleteUsersByProblem :many
+SELECT users.id, users.username, users.email, users.password_hash, users.activated, users.admin, users.created_at
+FROM users
+JOIN problems ON problems.id = ?
+WHERE EXISTS (
+    SELECT 1 FROM problem_inputs pi
+    WHERE pi.problem_id = problems.id AND pi.user_id = users.id
+) AND (
+    SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+    WHERE po.problem_id = problems.id AND po.user_id = users.id
+      AND po.part BETWEEN 1 AND problems.parts
+) = problems.parts
+ORDER BY users.username
+`
+
+func (q *Queries) ListCompleteUsersByProblem(ctx context.Context, id int64) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listCompleteUsersByProblem, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Username,
+			&i.Email,
+			&i.PasswordHash,
+			&i.Activated,
+			&i.Admin,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDifficulties = `-- name: ListDifficulties :many
 SELECT id, name, points FROM difficulties ORDER BY points, name
 `
@@ -210,7 +352,18 @@ func (q *Queries) ListDifficulties(ctx context.Context) ([]Difficulty, error) {
 }
 
 const listProblemsByContest = `-- name: ListProblemsByContest :many
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, difficulties.id, difficulties.name, difficulties.points, CAST((
+    SELECT COUNT(*)
+    FROM users u
+    WHERE EXISTS (
+        SELECT 1 FROM problem_inputs pi
+        WHERE pi.problem_id = problems.id AND pi.user_id = u.id
+    ) AND (
+        SELECT COUNT(DISTINCT po.part) FROM problem_outputs po
+        WHERE po.problem_id = problems.id AND po.user_id = u.id
+          AND po.part BETWEEN 1 AND problems.parts
+    ) = problems.parts
+) AS INTEGER) AS complete_users
 FROM problems
 JOIN difficulties ON difficulties.id = problems.difficulty_id
 WHERE problems.contest_id = ?
@@ -218,8 +371,9 @@ ORDER BY difficulties.points, problems.name
 `
 
 type ListProblemsByContestRow struct {
-	Problem    Problem
-	Difficulty Difficulty
+	Problem       Problem
+	Difficulty    Difficulty
+	CompleteUsers int64
 }
 
 func (q *Queries) ListProblemsByContest(ctx context.Context, contestID int64) ([]ListProblemsByContestRow, error) {
@@ -244,6 +398,7 @@ func (q *Queries) ListProblemsByContest(ctx context.Context, contestID int64) ([
 			&i.Difficulty.ID,
 			&i.Difficulty.Name,
 			&i.Difficulty.Points,
+			&i.CompleteUsers,
 		); err != nil {
 			return nil, err
 		}

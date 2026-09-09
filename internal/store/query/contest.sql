@@ -1,6 +1,6 @@
 -- name: CreateContest :one
-INSERT INTO contests (slug, name, description, start_at, end_at, unlisted)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO contests (slug, name, description, start_at, end_at, unlisted, auto_generate)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetContest :one
@@ -12,6 +12,9 @@ SELECT * FROM contests WHERE slug = ?;
 -- name: ListContests :many
 SELECT * FROM contests ORDER BY start_at DESC;
 
+-- name: ListAutoGenerateContests :many
+SELECT * FROM contests WHERE auto_generate = TRUE ORDER BY id;
+
 -- name: ListArchivedContests :many
 SELECT * FROM contests WHERE unlisted = FALSE ORDER BY start_at DESC;
 
@@ -21,6 +24,7 @@ UPDATE contests SET
     name        = COALESCE(sqlc.narg('name'), name),
     description = COALESCE(sqlc.narg('description'), description),
     unlisted    = COALESCE(sqlc.narg('unlisted'), unlisted),
+    auto_generate = COALESCE(sqlc.narg('auto_generate'), auto_generate),
     start_at    = COALESCE(sqlc.narg('start_at'), start_at),
     end_at      = COALESCE(sqlc.narg('end_at'), end_at)
 WHERE id = sqlc.arg('id');

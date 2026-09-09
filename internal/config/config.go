@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 )
@@ -15,12 +16,15 @@ const AppName = "iosu"
 var DefaultPath = fmt.Sprintf("/etc/%s/config.toml", AppName)
 
 type Config struct {
-	ServerPort           string `toml:"server_port"`
-	JWTKey               string `toml:"jwt_key"`
-	DefaultAdminPassword string `toml:"default_admin_password"`
-	DataDir              string `toml:"data_directory"`
-	DBPath               string `toml:"db_path"`
-	DevMode              bool   `toml:"dev_mode"`
+	ServerPort               string `toml:"server_port"`
+	JWTKey                   string `toml:"jwt_key"`
+	DefaultAdminPassword     string `toml:"default_admin_password"`
+	DataDir                  string `toml:"data_directory"`
+	DBPath                   string `toml:"db_path"`
+	DevMode                  bool   `toml:"dev_mode"`
+	GenerationParallelRuns   int    `toml:"generation_parallel_runs"`
+	GenerationTimeoutSeconds int    `toml:"generation_timeout_seconds"`
+	GenerationMaxOutputBytes int64  `toml:"generation_max_output_bytes"`
 }
 
 // Parse reads path, applies IOSU_* environment overrides and validates the
@@ -41,6 +45,15 @@ func Parse(path string) (*Config, error) {
 	env(&c.DefaultAdminPassword, "IOSU_ADMIN_PASSWORD")
 	env(&c.DataDir, "IOSU_DATA_DIR")
 	env(&c.DBPath, "IOSU_DB_PATH")
+	if err := envInt(&c.GenerationParallelRuns, "IOSU_GENERATION_PARALLEL_RUNS"); err != nil {
+		return nil, err
+	}
+	if err := envInt(&c.GenerationTimeoutSeconds, "IOSU_GENERATION_TIMEOUT_SECONDS"); err != nil {
+		return nil, err
+	}
+	if err := envInt64(&c.GenerationMaxOutputBytes, "IOSU_GENERATION_MAX_OUTPUT_BYTES"); err != nil {
+		return nil, err
+	}
 
 	if c.ServerPort == "" {
 		c.ServerPort = "8990"
@@ -54,6 +67,18 @@ func Parse(path string) (*Config, error) {
 	if len(c.JWTKey) < 32 {
 		return nil, errors.New("jwt_key must be at least 32 characters; generate one with: head -c 32 /dev/urandom | base64")
 	}
+	if c.GenerationParallelRuns < 0 || c.GenerationTimeoutSeconds < 0 || c.GenerationMaxOutputBytes < 0 {
+		return nil, errors.New("generation limits cannot be negative")
+	}
+	if c.GenerationParallelRuns == 0 {
+		c.GenerationParallelRuns = 4
+	}
+	if c.GenerationTimeoutSeconds == 0 {
+		c.GenerationTimeoutSeconds = 30
+	}
+	if c.GenerationMaxOutputBytes == 0 {
+		c.GenerationMaxOutputBytes = 128 << 10
+	}
 	return &c, nil
 }
 
@@ -61,4 +86,26 @@ func env(dst *string, name string) {
 	if v, ok := os.LookupEnv(name); ok {
 		*dst = v
 	}
+}
+
+func envInt(dst *int, name string) error {
+	if v, ok := os.LookupEnv(name); ok {
+		n, err := strconv.Atoi(v)
+		if err != nil {
+			return fmt.Errorf("%s must be an integer", name)
+		}
+		*dst = n
+	}
+	return nil
+}
+
+func envInt64(dst *int64, name string) error {
+	if v, ok := os.LookupEnv(name); ok {
+		n, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("%s must be an integer", name)
+		}
+		*dst = n
+	}
+	return nil
 }

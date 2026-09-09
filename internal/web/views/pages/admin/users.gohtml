@@ -4,6 +4,23 @@
 	<div class="btns">
 		<a class="btn btn--large" href="/admin/users/new">Nouvel utilisateur</a>
 	</div>
+	<form id="admin-generation-form" method="post" action="/admin/generations" class="admin-generation-form">
+		<div>
+			<label for="generation-contest">Concours</label>
+			<select id="generation-contest" name="contest" required>
+				<option value="">Sélectionner un concours</option>
+				{{ range .Page.Contests }}<option value="{{ .Slug }}">{{ .Name }}</option>{{ end }}
+			</select>
+		</div>
+		<div>
+			<label for="generation-mode">Mode</label>
+			<select id="generation-mode" name="mode">
+				<option value="replace">Remplacer</option>
+				<option value="missing">Compléter uniquement</option>
+			</select>
+		</div>
+		<button class="btn" type="submit">Générer les données sélectionnées</button>
+	</form>
 	<form method="post" action="/admin/users/import" enctype="multipart/form-data" class="admin-user-import">
 		<div>
 			<label for="users">Importer des utilisateurs depuis un fichier CSV</label>
@@ -19,9 +36,11 @@
 	<section class="article__container admin-user-list">
 		{{ range .Page.Users }}
 		<article class="admin-user-list__item">
+			<input form="admin-generation-form" name="user" value="{{ .ID }}" type="checkbox" aria-label="Sélectionner {{ .Username }}">
 			<div class="admin-user-list__details">
 				<h3>{{ .Username }}</h3>
 				<p class="subtitle">{{ .Email }} · {{ if .Activated }}Activé{{ else }}Non activé{{ end }}{{ if .Admin }} · Administrateur{{ end }}</p>
+				<p><a href="/admin/users/{{ .ID }}/problems">{{ .CompleteProblems }} {{ if eq .CompleteProblems 1 }}problème complet{{ else }}problèmes complets{{ end }}</a></p>
 			</div>
 			<div class="btns btns--no-marge admin-user-list__actions">
 				{{ if not .Activated }}

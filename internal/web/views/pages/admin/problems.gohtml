@@ -18,6 +18,12 @@
 						<li{{ if not .Present }} class="danger"{{ end }}>Partie {{ .Number }} : {{ if .Present }}fichier Markdown présent{{ else }}fichier Markdown manquant{{ end }}</li>
 						{{ end }}
 					</ul>
+					<ul class="admin-problem-list__parts">
+						{{ range .GeneratorFiles }}
+						<li{{ if not .Executable }} class="danger"{{ end }}>{{ .Name }} : {{ if .Executable }}exécutable{{ else if .Present }}non exécutable{{ else }}manquant{{ end }}</li>
+						{{ end }}
+					</ul>
+					<p><a href="/admin/problems/{{ .Problem.Slug }}/users">{{ .CompleteUsers }} {{ if eq .CompleteUsers 1 }}utilisateur complet{{ else }}utilisateurs complets{{ end }}</a></p>
 				</div>
 				<div class="btns btns--no-marge admin-problem-list__actions">
 					<a class="btn" href="/admin/problems/{{ .Problem.Slug }}/edit">Modifier</a>

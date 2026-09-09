@@ -1,0 +1,16 @@
+{{ define "content" }}
+<main class="larger">
+	<h1>Génération — {{ .Page.Run.ContestName }}</h1>
+	<p>{{ .Page.Run.Status }} · {{ .Page.Run.Source }} · {{ .Page.Run.Mode }} · {{ .Page.Run.CreatedAt }}</p>
+	<p>{{ .Page.Run.Succeeded }} réussies · {{ .Page.Run.Running }} en cours · {{ .Page.Run.Queued }} en attente · {{ .Page.Run.Failed }} en échec · {{ .Page.Run.Skipped }} ignorées</p>
+	<table>
+		<thead><tr><th>Utilisateur</th><th>Problème</th><th>État</th><th>Détail</th></tr></thead>
+		<tbody>
+		{{ range .Page.Tasks }}
+		<tr><td>{{ .Username }}</td><td>{{ .ProblemName }}</td><td>{{ .Status }}</td><td class="generation-error">{{ .Error }}</td></tr>
+		{{ else }}<tr><td colspan="4">Ce concours ne contient aucun problème.</td></tr>{{ end }}
+		</tbody>
+	</table>
+	<p><a class="btn" href="/admin/users">Retour aux utilisateurs</a></p>
+</main>
+{{ end }}
