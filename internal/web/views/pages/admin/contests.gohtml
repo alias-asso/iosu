@@ -1,24 +1,24 @@
 {{ define "content" }}
-<main class="larger">
+<main class="larger admin-table-page">
 	<h1>Concours</h1>
 	<div class="btns">
 		<a class="btn btn--large" href="/admin/contests/new">Nouveau concours</a>
 	</div>
-	<section class="article__container admin-contest-list">
-		{{ range .Page }}
-		<article class="admin-contest-list__item">
-			<div>
-				<h3>{{ .Name | salmond }}</h3>
-				<p class="subtitle">{{ if .Unlisted }}Non listé{{ else }}Listé{{ end }}</p>
-			</div>
-			<div class="btns btns--no-marge admin-contest-list__actions">
-				<a class="btn" href="/admin/contests/{{ .Slug }}/edit">Modifier</a>
-				<a class="btn btn--danger" href="/admin/contests/{{ .Slug }}/delete">Supprimer</a>
-			</div>
-		</article>
-		{{ else }}
-		<p>Aucun concours n'a été créé.</p>
-		{{ end }}
-	</section>
+	<div class="admin-table-wrapper">
+		<table class="admin-table">
+			<thead><tr><th scope="col">Concours</th><th scope="col">Visibilité</th><th scope="col">Génération automatique</th><th scope="col">Modifier</th><th scope="col">Supprimer</th></tr></thead>
+			<tbody>
+			{{ range .Page }}
+			<tr>
+				<td><strong>{{ .Name }}</strong><small>{{ .Slug }}</small></td>
+				<td>{{ if .Unlisted }}Non listé{{ else }}Listé{{ end }}</td>
+				<td>{{ if .AutoGenerate }}Activée{{ else }}Désactivée{{ end }}</td>
+				<td><a class="btn admin-table__button" href="/admin/contests/{{ .Slug }}/edit">Modifier</a></td>
+				<td><a class="btn btn--danger admin-table__button" href="/admin/contests/{{ .Slug }}/delete">Supprimer</a></td>
+			</tr>
+			{{ else }}<tr><td colspan="5">Aucun concours n'a été créé.</td></tr>{{ end }}
+			</tbody>
+		</table>
+	</div>
 </main>
 {{ end }}

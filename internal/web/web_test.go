@@ -652,7 +652,8 @@ func TestAdminGenerationControlsAndDetails(t *testing.T) {
 		`action="/admin/generations"`, `name="contest"`, `name="mode"`,
 		`name="user" value="` + strconv.FormatInt(alice.ID, 10) + `"`,
 		`href="/admin/users/` + strconv.FormatInt(alice.ID, 10) + `/problems"`,
-		"1 problème complet",
+		"1 problème",
+		`class="admin-table admin-table--users"`,
 	} {
 		if !strings.Contains(rec.Body.String(), want) {
 			t.Errorf("users page does not contain %q: %s", want, rec.Body.String())
@@ -681,12 +682,23 @@ func TestAdminGenerationControlsAndDetails(t *testing.T) {
 		t.Fatalf("generation list page: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	rec = ts.get("/admin/users/"+strconv.FormatInt(alice.ID, 10)+"/problems", &admin)
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "One") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "One") || !strings.Contains(rec.Body.String(), `/admin/problems/one/users/`+strconv.FormatInt(alice.ID, 10)+`/generate`) {
 		t.Fatalf("user problems: status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	rec = ts.get("/admin/problems/one/users", &admin)
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "alice") {
+	generationAction := "/admin/problems/one/users/" + strconv.FormatInt(alice.ID, 10) + "/generate"
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "alice") || !strings.Contains(rec.Body.String(), `action="`+generationAction+`"`) {
 		t.Fatalf("problem users: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.postForm(generationAction, nil, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("single regeneration: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get(rec.Header().Get("Location"), &admin)
+	for _, want := range []string{"alice", "One", "En attente"} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("single regeneration run does not contain %q: %s", want, rec.Body.String())
+		}
 	}
 }
 
@@ -759,9 +771,10 @@ func TestAdminProblemsListsMarkdownFilesByContest(t *testing.T) {
 		t.Fatalf("status %d, want 200", rec.Code)
 	}
 	for _, want := range []string{
-		"Problèmes", "Alpha", "Beta", "One", "2 parties",
-		"Partie 1 : fichier Markdown présent",
-		"Partie 2 : fichier Markdown manquant",
+		"Problèmes", "Alpha", "Beta", "One", "<td>2</td>",
+		"Partie 1 : présent",
+		"Partie 2 : manquant",
+		`class="admin-table admin-table--problems"`,
 		`href="/admin/problems/new"`,
 		`href="/admin/problems/one/edit"`,
 		`href="/admin/problems/one/delete"`,

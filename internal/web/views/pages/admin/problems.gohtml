@@ -1,5 +1,5 @@
 {{ define "content" }}
-<main class="larger">
+<main class="larger admin-table-page">
 	<h1>Problemes</h1>
 	<div class="btns">
 		<a class="btn btn--large" href="/admin/problems/new">Nouveau problème</a>
@@ -7,32 +7,24 @@
 	{{ range .Page }}
 	<section class="admin-problem-section">
 		<h2>{{ .Contest.Name | salmond }}</h2>
-		<div class="article__container admin-problem-list">
-			{{ range .Problems }}
-			<article class="admin-problem-list__item">
-				<div class="admin-problem-list__details">
-					<h3>{{ .Problem.Name | salmond }}</h3>
-					<p class="subtitle">{{ .Difficulty.Name }} · {{ .Problem.Parts }} {{ if eq .Problem.Parts 1 }}partie{{ else }}parties{{ end }}</p>
-					<ul class="admin-problem-list__parts">
-						{{ range .PartFiles }}
-						<li{{ if not .Present }} class="danger"{{ end }}>Partie {{ .Number }} : {{ if .Present }}fichier Markdown présent{{ else }}fichier Markdown manquant{{ end }}</li>
-						{{ end }}
-					</ul>
-					<ul class="admin-problem-list__parts">
-						{{ range .GeneratorFiles }}
-						<li{{ if not .Executable }} class="danger"{{ end }}>{{ .Name }} : {{ if .Executable }}exécutable{{ else if .Present }}non exécutable{{ else }}manquant{{ end }}</li>
-						{{ end }}
-					</ul>
-					<p><a href="/admin/problems/{{ .Problem.Slug }}/users">{{ .CompleteUsers }} {{ if eq .CompleteUsers 1 }}utilisateur complet{{ else }}utilisateurs complets{{ end }}</a></p>
-				</div>
-				<div class="btns btns--no-marge admin-problem-list__actions">
-					<a class="btn" href="/admin/problems/{{ .Problem.Slug }}/edit">Modifier</a>
-					<a class="btn btn--danger" href="/admin/problems/{{ .Problem.Slug }}/delete">Supprimer</a>
-				</div>
-			</article>
-			{{ else }}
-			<p>Aucun problème dans ce concours.</p>
-			{{ end }}
+		<div class="admin-table-wrapper">
+			<table class="admin-table admin-table--problems">
+				<thead><tr><th scope="col">Problème</th><th scope="col">Difficulté</th><th scope="col">Parties</th><th scope="col">Markdown</th><th scope="col">Générateurs</th><th scope="col">Données</th><th scope="col">Modifier</th><th scope="col">Supprimer</th></tr></thead>
+				<tbody>
+				{{ range .Problems }}
+				<tr>
+					<td><strong>{{ .Problem.Name }}</strong><small>{{ .Problem.Slug }}</small></td>
+					<td>{{ .Difficulty.Name }}</td>
+					<td>{{ .Problem.Parts }}</td>
+					<td><ul class="admin-table__status-list">{{ range .PartFiles }}<li{{ if not .Present }} class="danger"{{ end }}>Partie {{ .Number }} : {{ if .Present }}présent{{ else }}manquant{{ end }}</li>{{ end }}</ul></td>
+					<td><ul class="admin-table__status-list">{{ range .GeneratorFiles }}<li{{ if not .Executable }} class="danger"{{ end }}>{{ .Name }} : {{ if .Executable }}exécutable{{ else if .Present }}non exécutable{{ else }}manquant{{ end }}</li>{{ end }}</ul></td>
+					<td><a href="/admin/problems/{{ .Problem.Slug }}/users">{{ .CompleteUsers }} {{ if eq .CompleteUsers 1 }}utilisateur{{ else }}utilisateurs{{ end }}</a></td>
+					<td><a class="btn admin-table__button" href="/admin/problems/{{ .Problem.Slug }}/edit">Modifier</a></td>
+					<td><a class="btn btn--danger admin-table__button" href="/admin/problems/{{ .Problem.Slug }}/delete">Supprimer</a></td>
+				</tr>
+				{{ else }}<tr><td colspan="8">Aucun problème dans ce concours.</td></tr>{{ end }}
+				</tbody>
+			</table>
 		</div>
 	</section>
 	{{ else }}

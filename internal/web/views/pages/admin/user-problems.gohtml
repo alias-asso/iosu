@@ -1,10 +1,21 @@
 {{ define "content" }}
-<main class="larger">
+<main class="larger admin-table-page">
 	<h1>Problemes complets de {{ .Page.User.Username | salmond }}</h1>
 	{{ range .Page.Groups }}
 	<section>
 		<h2>{{ .Contest.Name | salmond }}</h2>
-		<ul>{{ range .Problems }}<li>{{ .Problem.Name }} · {{ .Difficulty.Name }}</li>{{ end }}</ul>
+		<div class="admin-table-wrapper">
+			<table class="admin-table">
+				<thead><tr><th scope="col">Problème</th><th scope="col">Difficulté</th><th scope="col">Régénérer</th></tr></thead>
+				<tbody>{{ range .Problems }}
+				<tr>
+					<td>{{ .Problem.Name }}</td>
+					<td>{{ .Difficulty.Name }}</td>
+					<td><form method="post" action="/admin/problems/{{ .Problem.Slug }}/users/{{ $.Page.User.ID }}/generate"><button class="btn admin-table__button" type="submit">Régénérer</button></form></td>
+				</tr>
+				{{ end }}</tbody>
+			</table>
+		</div>
 	</section>
 	{{ else }}<p>Aucune donnée de problème complète.</p>{{ end }}
 	<p><a class="btn" href="/admin/users">Retour aux utilisateurs</a></p>

@@ -70,6 +70,35 @@ func (a *App) QueueGeneration(ctx context.Context, contestSlug, mode string, use
 	return runID, nil
 }
 
+func (a *App) QueueProblemGeneration(ctx context.Context, problemSlug string, userID int64) (int64, error) {
+	problem, err := a.Problem(ctx, problemSlug)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := a.User(ctx, userID); err != nil {
+		return 0, err
+	}
+	var runID int64
+	err = a.store.Tx(ctx, func(q *sqlc.Queries) error {
+		run, err := q.CreateGenerationRun(ctx, sqlc.CreateGenerationRunParams{
+			ContestID: problem.Contest.ID, Source: "manual", Mode: "replace", CreatedAt: a.now().Unix(),
+		})
+		if err != nil {
+			return err
+		}
+		runID = run.ID
+		if err := a.createGenerationTask(ctx, q, run.ID, problem.Problem.ID, userID, "replace"); err != nil {
+			return err
+		}
+		return a.finishGenerationRunIfIdle(ctx, q, run.ID)
+	})
+	if err != nil {
+		return 0, err
+	}
+	a.wakeGenerator()
+	return runID, nil
+}
+
 func (a *App) createGenerationTask(ctx context.Context, q *sqlc.Queries, runID, problemID, userID int64, mode string) error {
 	status, message := "queued", ""
 	active, err := q.HasActiveGenerationTask(ctx, sqlc.HasActiveGenerationTaskParams{ProblemID: problemID, UserID: userID})

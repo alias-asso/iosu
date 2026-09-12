@@ -1,5 +1,5 @@
 {{ define "content" }}
-<main class="larger">
+<main class="larger admin-table-page">
 	<h1>Utilisateurs</h1>
 	<div class="btns">
 		<a class="btn btn--large" href="/admin/users/new">Nouvel utilisateur</a>
@@ -33,33 +33,28 @@
 		<p>{{ .Page.Error }}</p>
 	</div>
 	{{ end }}
-	<section class="article__container admin-user-list">
-		{{ range .Page.Users }}
-		<article class="admin-user-list__item">
-			<input form="admin-generation-form" name="user" value="{{ .ID }}" type="checkbox" aria-label="Sélectionner {{ .Username }}">
-			<div class="admin-user-list__details">
-				<h3>{{ .Username | salmond }}</h3>
-				<p class="subtitle">{{ .Email }} · {{ if .Activated }}Activé{{ else }}Non activé{{ end }}{{ if .Admin }} · Administrateur{{ end }}</p>
-				<p><a href="/admin/users/{{ .ID }}/problems">{{ .CompleteProblems }} {{ if eq .CompleteProblems 1 }}problème complet{{ else }}problèmes complets{{ end }}</a></p>
-			</div>
-			<div class="btns btns--no-marge admin-user-list__actions">
-				{{ if not .Activated }}
-					{{ if .ActivationLink }}
-					<a class="btn" href="{{ .ActivationLink }}">{{ if $.Config.RegistrationRequiresApproval }}Valider{{ else }}Activer{{ end }}</a>
-					{{ else }}
-					<form method="post" action="/admin/users/{{ .ID }}/approve">
-						<button class="btn" type="submit">Valider</button>
-					</form>
-					{{ end }}
-				{{ end }}
-				<a class="btn" href="/admin/users/{{ .ID }}/edit">Modifier</a>
-				{{ if not .Admin }}<a class="btn" href="/admin/users/{{ .ID }}/admin">Rendre administrateur</a>{{ end }}
-				<a class="btn btn--danger" href="/admin/users/{{ .ID }}/delete">Supprimer</a>
-			</div>
-		</article>
-		{{ else }}
-		<p>Aucun utilisateur n'a été créé.</p>
-		{{ end }}
-	</section>
+	<div class="admin-table-wrapper">
+		<table class="admin-table admin-table--users">
+			<thead><tr><th scope="col">Choix</th><th scope="col">Utilisateur</th><th scope="col">Statut</th><th scope="col">Données</th><th scope="col">Activation</th><th scope="col">Modifier</th><th scope="col">Admin</th><th scope="col">Supprimer</th></tr></thead>
+			<tbody>
+			{{ range .Page.Users }}
+			<tr>
+				<td><input id="generation-user-{{ .ID }}" form="admin-generation-form" name="user" value="{{ .ID }}" type="checkbox" aria-label="Sélectionner {{ .Username }}"></td>
+				<td><label for="generation-user-{{ .ID }}"><strong>{{ .Username }}</strong></label><small>{{ .Email }}</small></td>
+				<td>{{ if .Activated }}Activé{{ else }}Non activé{{ end }}{{ if .Admin }}<small>Administrateur</small>{{ end }}</td>
+				<td><a href="/admin/users/{{ .ID }}/problems">{{ .CompleteProblems }} {{ if eq .CompleteProblems 1 }}problème{{ else }}problèmes{{ end }}</a></td>
+				<td>
+					{{ if not .Activated }}{{ if .ActivationLink }}
+					<a class="btn admin-table__button" href="{{ .ActivationLink }}">{{ if $.Config.RegistrationRequiresApproval }}Valider{{ else }}Activer{{ end }}</a>
+					{{ else }}<form method="post" action="/admin/users/{{ .ID }}/approve"><button class="btn admin-table__button" type="submit">Valider</button></form>{{ end }}{{ else }}—{{ end }}
+				</td>
+				<td><a class="btn admin-table__button" href="/admin/users/{{ .ID }}/edit">Modifier</a></td>
+				<td>{{ if not .Admin }}<a class="btn admin-table__button" href="/admin/users/{{ .ID }}/admin">Promouvoir</a>{{ else }}—{{ end }}</td>
+				<td><a class="btn btn--danger admin-table__button" href="/admin/users/{{ .ID }}/delete">Supprimer</a></td>
+			</tr>
+			{{ else }}<tr><td colspan="8">Aucun utilisateur n'a été créé.</td></tr>{{ end }}
+			</tbody>
+		</table>
+	</div>
 </main>
 {{ end }}

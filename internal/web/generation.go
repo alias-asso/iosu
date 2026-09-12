@@ -192,6 +192,20 @@ func (s *Server) getAdminProblemUsers(w http.ResponseWriter, r *http.Request) {
 	s.render(w, r, "admin/problem-users", adminProblemUsersPage{Problem: problem, Users: users})
 }
 
+func (s *Server) postAdminProblemUserGeneration(w http.ResponseWriter, r *http.Request) {
+	userID, err := strconv.ParseInt(r.PathValue("user"), 10, 64)
+	if err != nil {
+		s.renderError(w, r, app.ErrUserNotFound)
+		return
+	}
+	runID, err := s.app.QueueProblemGeneration(r.Context(), r.PathValue("problem"), userID)
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/generations/"+strconv.FormatInt(runID, 10), http.StatusSeeOther)
+}
+
 func generationSource(source string) string {
 	if source == "automatic" {
 		return "Automatique"

@@ -1,10 +1,19 @@
 {{ define "content" }}
 <main class="larger">
 	<h1>Utilisateurs complets — {{ .Page.Problem.Problem.Name | salmond }}</h1>
-	<ul>
-		{{ range .Page.Users }}<li><a href="/admin/users/{{ .ID }}/problems">{{ .Username }}</a>{{ if .Admin }} · Administrateur{{ end }}</li>
-		{{ else }}<li>Aucun utilisateur ne possède toutes les données.</li>{{ end }}
-	</ul>
+	<div class="admin-table-wrapper">
+		<table class="admin-table">
+			<thead><tr><th scope="col">Utilisateur</th><th scope="col">Régénérer</th></tr></thead>
+			<tbody>
+			{{ range .Page.Users }}
+			<tr>
+				<td><a href="/admin/users/{{ .ID }}/problems">{{ .Username }}</a>{{ if .Admin }}<small>Administrateur</small>{{ end }}</td>
+				<td><form method="post" action="/admin/problems/{{ $.Page.Problem.Problem.Slug }}/users/{{ .ID }}/generate"><button class="btn admin-table__button" type="submit">Régénérer</button></form></td>
+			</tr>
+			{{ else }}<tr><td colspan="2">Aucun utilisateur ne possède toutes les données.</td></tr>{{ end }}
+			</tbody>
+		</table>
+	</div>
 	<p><a class="btn" href="/admin/problems">Retour aux problèmes</a></p>
 </main>
 {{ end }}
