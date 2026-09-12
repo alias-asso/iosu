@@ -11,9 +11,9 @@ import (
 )
 
 const createContest = `-- name: CreateContest :one
-INSERT INTO contests (slug, name, description, start_at, end_at, unlisted, auto_generate)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, slug, name, description, start_at, end_at, unlisted, auto_generate
+INSERT INTO contests (slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite
 `
 
 type CreateContestParams struct {
@@ -24,6 +24,8 @@ type CreateContestParams struct {
 	EndAt        int64
 	Unlisted     bool
 	AutoGenerate bool
+	Mode         string
+	Infinite     bool
 }
 
 func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (Contest, error) {
@@ -35,6 +37,8 @@ func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (C
 		arg.EndAt,
 		arg.Unlisted,
 		arg.AutoGenerate,
+		arg.Mode,
+		arg.Infinite,
 	)
 	var i Contest
 	err := row.Scan(
@@ -46,6 +50,8 @@ func (q *Queries) CreateContest(ctx context.Context, arg CreateContestParams) (C
 		&i.EndAt,
 		&i.Unlisted,
 		&i.AutoGenerate,
+		&i.Mode,
+		&i.Infinite,
 	)
 	return i, err
 }
@@ -63,7 +69,7 @@ func (q *Queries) DeleteContest(ctx context.Context, id int64) (int64, error) {
 }
 
 const getContest = `-- name: GetContest :one
-SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate FROM contests WHERE id = ?
+SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite FROM contests WHERE id = ?
 `
 
 func (q *Queries) GetContest(ctx context.Context, id int64) (Contest, error) {
@@ -78,12 +84,14 @@ func (q *Queries) GetContest(ctx context.Context, id int64) (Contest, error) {
 		&i.EndAt,
 		&i.Unlisted,
 		&i.AutoGenerate,
+		&i.Mode,
+		&i.Infinite,
 	)
 	return i, err
 }
 
 const getContestBySlug = `-- name: GetContestBySlug :one
-SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate FROM contests WHERE slug = ?
+SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite FROM contests WHERE slug = ?
 `
 
 func (q *Queries) GetContestBySlug(ctx context.Context, slug string) (Contest, error) {
@@ -98,12 +106,14 @@ func (q *Queries) GetContestBySlug(ctx context.Context, slug string) (Contest, e
 		&i.EndAt,
 		&i.Unlisted,
 		&i.AutoGenerate,
+		&i.Mode,
+		&i.Infinite,
 	)
 	return i, err
 }
 
 const listArchivedContests = `-- name: ListArchivedContests :many
-SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate FROM contests WHERE unlisted = FALSE ORDER BY start_at DESC
+SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite FROM contests WHERE unlisted = FALSE ORDER BY start_at DESC
 `
 
 func (q *Queries) ListArchivedContests(ctx context.Context) ([]Contest, error) {
@@ -124,6 +134,8 @@ func (q *Queries) ListArchivedContests(ctx context.Context) ([]Contest, error) {
 			&i.EndAt,
 			&i.Unlisted,
 			&i.AutoGenerate,
+			&i.Mode,
+			&i.Infinite,
 		); err != nil {
 			return nil, err
 		}
@@ -139,7 +151,7 @@ func (q *Queries) ListArchivedContests(ctx context.Context) ([]Contest, error) {
 }
 
 const listAutoGenerateContests = `-- name: ListAutoGenerateContests :many
-SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate FROM contests WHERE auto_generate = TRUE ORDER BY id
+SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite FROM contests WHERE auto_generate = TRUE AND mode = 'normal' ORDER BY id
 `
 
 func (q *Queries) ListAutoGenerateContests(ctx context.Context) ([]Contest, error) {
@@ -160,6 +172,8 @@ func (q *Queries) ListAutoGenerateContests(ctx context.Context) ([]Contest, erro
 			&i.EndAt,
 			&i.Unlisted,
 			&i.AutoGenerate,
+			&i.Mode,
+			&i.Infinite,
 		); err != nil {
 			return nil, err
 		}
@@ -175,7 +189,7 @@ func (q *Queries) ListAutoGenerateContests(ctx context.Context) ([]Contest, erro
 }
 
 const listContests = `-- name: ListContests :many
-SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate FROM contests ORDER BY start_at DESC
+SELECT id, slug, name, description, start_at, end_at, unlisted, auto_generate, mode, infinite FROM contests ORDER BY start_at DESC
 `
 
 func (q *Queries) ListContests(ctx context.Context) ([]Contest, error) {
@@ -196,6 +210,8 @@ func (q *Queries) ListContests(ctx context.Context) ([]Contest, error) {
 			&i.EndAt,
 			&i.Unlisted,
 			&i.AutoGenerate,
+			&i.Mode,
+			&i.Infinite,
 		); err != nil {
 			return nil, err
 		}
@@ -217,9 +233,11 @@ UPDATE contests SET
     description = COALESCE(?3, description),
     unlisted    = COALESCE(?4, unlisted),
     auto_generate = COALESCE(?5, auto_generate),
-    start_at    = COALESCE(?6, start_at),
-    end_at      = COALESCE(?7, end_at)
-WHERE id = ?8
+    mode        = COALESCE(?6, mode),
+    infinite    = COALESCE(?7, infinite),
+    start_at    = COALESCE(?8, start_at),
+    end_at      = COALESCE(?9, end_at)
+WHERE id = ?10
 `
 
 type UpdateContestParams struct {
@@ -228,6 +246,8 @@ type UpdateContestParams struct {
 	Description  sql.NullString
 	Unlisted     sql.NullBool
 	AutoGenerate sql.NullBool
+	Mode         sql.NullString
+	Infinite     sql.NullBool
 	StartAt      sql.NullInt64
 	EndAt        sql.NullInt64
 	ID           int64
@@ -240,6 +260,8 @@ func (q *Queries) UpdateContest(ctx context.Context, arg UpdateContestParams) (i
 		arg.Description,
 		arg.Unlisted,
 		arg.AutoGenerate,
+		arg.Mode,
+		arg.Infinite,
 		arg.StartAt,
 		arg.EndAt,
 		arg.ID,

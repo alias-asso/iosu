@@ -23,12 +23,13 @@ var (
 
 	ErrInvalidCSV = errors.New("invalid CSV")
 
-	ErrContestNotFound   = errors.New("contest not found")
-	ErrContestExists     = errors.New("contest already exists")
-	ErrContestNotEmpty   = errors.New("contest contains problems")
-	ErrContestNotStarted = errors.New("contest has not started")
-	ErrContestFinished   = errors.New("contest is over")
-	ErrInvalidTimeRange  = errors.New("end time is before start time")
+	ErrContestNotFound    = errors.New("contest not found")
+	ErrContestExists      = errors.New("contest already exists")
+	ErrContestNotEmpty    = errors.New("contest contains problems")
+	ErrContestNotStarted  = errors.New("contest has not started")
+	ErrContestFinished    = errors.New("contest is over")
+	ErrInvalidTimeRange   = errors.New("end time is before start time")
+	ErrInvalidContestMode = errors.New("invalid contest mode")
 
 	ErrProblemNotFound    = errors.New("problem not found")
 	ErrProblemExists      = errors.New("problem already exists")

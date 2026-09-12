@@ -92,8 +92,35 @@ func (q *Queries) GetDifficultyByName(ctx context.Context, name string) (Difficu
 	return i, err
 }
 
+const getFreePlayInput = `-- name: GetFreePlayInput :one
+SELECT input FROM problem_free_play_inputs WHERE problem_id = ?
+`
+
+func (q *Queries) GetFreePlayInput(ctx context.Context, problemID int64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getFreePlayInput, problemID)
+	var input string
+	err := row.Scan(&input)
+	return input, err
+}
+
+const getFreePlayOutput = `-- name: GetFreePlayOutput :one
+SELECT output FROM problem_free_play_outputs WHERE problem_id = ? AND part = ?
+`
+
+type GetFreePlayOutputParams struct {
+	ProblemID int64
+	Part      int64
+}
+
+func (q *Queries) GetFreePlayOutput(ctx context.Context, arg GetFreePlayOutputParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, getFreePlayOutput, arg.ProblemID, arg.Part)
+	var output string
+	err := row.Scan(&output)
+	return output, err
+}
+
 const getProblemBySlug = `-- name: GetProblemBySlug :one
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests     ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -127,6 +154,8 @@ func (q *Queries) GetProblemBySlug(ctx context.Context, slug string) (GetProblem
 		&i.Contest.EndAt,
 		&i.Contest.Unlisted,
 		&i.Contest.AutoGenerate,
+		&i.Contest.Mode,
+		&i.Contest.Infinite,
 		&i.Difficulty.ID,
 		&i.Difficulty.Name,
 		&i.Difficulty.Points,
@@ -183,6 +212,23 @@ func (q *Queries) GetSolvedParts(ctx context.Context, arg GetSolvedPartsParams) 
 	return column_1, err
 }
 
+const hasCompleteFreePlayData = `-- name: HasCompleteFreePlayData :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM problems p
+    WHERE p.id = ?
+      AND EXISTS (SELECT 1 FROM problem_free_play_inputs WHERE problem_id = p.id)
+      AND (SELECT COUNT(DISTINCT part) FROM problem_free_play_outputs
+           WHERE problem_id = p.id AND part BETWEEN 1 AND p.parts) = p.parts
+) AS BOOLEAN)
+`
+
+func (q *Queries) HasCompleteFreePlayData(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasCompleteFreePlayData, id)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const hasCompleteProblemData = `-- name: HasCompleteProblemData :one
 SELECT CAST(EXISTS (
     SELECT 1
@@ -213,7 +259,7 @@ func (q *Queries) HasCompleteProblemData(ctx context.Context, arg HasCompletePro
 }
 
 const listCompleteProblemsByUser = `-- name: ListCompleteProblemsByUser :many
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -261,6 +307,8 @@ func (q *Queries) ListCompleteProblemsByUser(ctx context.Context, userID int64) 
 			&i.Contest.EndAt,
 			&i.Contest.Unlisted,
 			&i.Contest.AutoGenerate,
+			&i.Contest.Mode,
+			&i.Contest.Infinite,
 			&i.Difficulty.ID,
 			&i.Difficulty.Name,
 			&i.Difficulty.Points,
@@ -451,6 +499,37 @@ func (q *Queries) UpdateProblem(ctx context.Context, arg UpdateProblemParams) (i
 		return 0, err
 	}
 	return result.RowsAffected()
+}
+
+const upsertFreePlayInput = `-- name: UpsertFreePlayInput :exec
+INSERT INTO problem_free_play_inputs (problem_id, input) VALUES (?, ?)
+ON CONFLICT (problem_id) DO UPDATE SET input = excluded.input
+`
+
+type UpsertFreePlayInputParams struct {
+	ProblemID int64
+	Input     string
+}
+
+func (q *Queries) UpsertFreePlayInput(ctx context.Context, arg UpsertFreePlayInputParams) error {
+	_, err := q.db.ExecContext(ctx, upsertFreePlayInput, arg.ProblemID, arg.Input)
+	return err
+}
+
+const upsertFreePlayOutput = `-- name: UpsertFreePlayOutput :exec
+INSERT INTO problem_free_play_outputs (problem_id, part, output) VALUES (?, ?, ?)
+ON CONFLICT (problem_id, part) DO UPDATE SET output = excluded.output
+`
+
+type UpsertFreePlayOutputParams struct {
+	ProblemID int64
+	Part      int64
+	Output    string
+}
+
+func (q *Queries) UpsertFreePlayOutput(ctx context.Context, arg UpsertFreePlayOutputParams) error {
+	_, err := q.db.ExecContext(ctx, upsertFreePlayOutput, arg.ProblemID, arg.Part, arg.Output)
+	return err
 }
 
 const upsertProblemInput = `-- name: UpsertProblemInput :exec

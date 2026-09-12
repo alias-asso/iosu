@@ -65,6 +65,47 @@ func TestAutomaticGenerationRunsScriptsAndStoresCompleteData(t *testing.T) {
 	}
 }
 
+func TestFreePlayGenerationStoresSharedData(t *testing.T) {
+	f := newFixture(t)
+	f.difficulty("facile", 10)
+	_, err := f.CreateContest(f.ctx(), CreateContestInput{
+		Slug: "replay", Name: "replay", Mode: ContestModeFreePlay, Infinite: true,
+	})
+	if err != nil {
+		t.Fatalf("creating contest: %v", err)
+	}
+	f.problem("replay", "shared", 2)
+	f.generator("replay", "shared", "generate_input", "#!/bin/sh\nprintf '%s-input\\n' \"$1\"\n")
+	f.generator("replay", "shared", "generate_output1", "#!/bin/sh\nprintf first\n")
+	f.generator("replay", "shared", "generate_output2", "#!/bin/sh\nprintf second\n")
+	runID, err := f.QueueFreePlayGeneration(f.ctx(), "replay")
+	if err != nil {
+		t.Fatalf("queueing: %v", err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- f.RunGenerator(ctx, testGenerationConfig()) }()
+	defer func() { cancel(); <-done }()
+	waitFor(t, func() bool {
+		run, _, err := f.GenerationRun(f.ctx(), runID)
+		return err == nil && run.Status == "completed"
+	})
+	detail, _ := f.Problem(f.ctx(), "shared")
+	if input, err := f.FreePlayInput(f.ctx(), detail); err != nil || input != "free-play-input" {
+		t.Fatalf("input=%q err=%v", input, err)
+	}
+	if ok, err := f.SubmitFreePlay(f.ctx(), "replay", "shared", 1, "first"); err != nil || !ok {
+		t.Fatalf("correct answer: ok=%v err=%v", ok, err)
+	}
+	if ok, err := f.SubmitFreePlay(f.ctx(), "replay", "shared", 2, "wrong"); err != nil || ok {
+		t.Fatalf("wrong answer: ok=%v err=%v", ok, err)
+	}
+	_, tasks, _ := f.GenerationRun(f.ctx(), runID)
+	if len(tasks) != 1 || tasks[0].Username != "Jeu libre" || !tasks[0].Shared {
+		t.Fatalf("tasks=%+v", tasks)
+	}
+}
+
 func TestFailedGenerationPreservesExistingData(t *testing.T) {
 	f, alice := seedProblem(t, 1, []string{"old-answer"})
 	f.generator("alpha", "one", "generate_input", "#!/bin/sh\nprintf new-input\n")

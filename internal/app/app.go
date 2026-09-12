@@ -73,6 +73,9 @@ func validSlug(s string) bool {
 
 // contestWindow reports whether the contest is currently open.
 func (a *App) contestWindow(c Contest) error {
+	if c.Infinite {
+		return nil
+	}
 	switch contestStatus(a.now().Unix(), c) {
 	case ContestUpcoming:
 		return ErrContestNotStarted

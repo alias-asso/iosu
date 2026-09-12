@@ -10,10 +10,11 @@ import (
 
 // layoutData is what every full page template receives.
 type layoutData struct {
-	LoggedIn bool
-	IsAdmin  bool
-	Config   app.SiteConfig
-	Page     any
+	LoggedIn               bool
+	IsAdmin                bool
+	CurrentContestFreePlay bool
+	Config                 app.SiteConfig
+	Page                   any
 }
 
 // render writes a full page. Template and config errors are logged, never
@@ -37,12 +38,19 @@ func (s *Server) renderWith(w http.ResponseWriter, r *http.Request, page string,
 	}
 
 	user, loggedIn := userFrom(r)
+	currentContestFreePlay := false
+	if config.CurrentContest != "" {
+		if contest, err := s.app.Contest(r.Context(), config.CurrentContest); err == nil {
+			currentContestFreePlay = contest.Mode == app.ContestModeFreePlay
+		}
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tpl.ExecuteTemplate(w, "base", layoutData{
-		LoggedIn: loggedIn,
-		IsAdmin:  loggedIn && user.Admin,
-		Config:   config,
-		Page:     data,
+		LoggedIn:               loggedIn,
+		IsAdmin:                loggedIn && user.Admin,
+		CurrentContestFreePlay: currentContestFreePlay,
+		Config:                 config,
+		Page:                   data,
 	}); err != nil {
 		// The response is likely half-written by now, so only log.
 		log.Printf("rendering pages/%s: %v", page, err)
@@ -103,12 +111,13 @@ var messages = map[error]struct {
 	app.ErrActivationCodeExpired: {"Ce code d'activation a expiré.", http.StatusBadRequest},
 	app.ErrActivationCodeUsed:    {"Ce code d'activation a déjà été utilisé.", http.StatusBadRequest},
 
-	app.ErrContestNotFound:   {"Concours introuvable.", http.StatusNotFound},
-	app.ErrContestExists:     {"Un concours utilise déjà cet identifiant.", http.StatusConflict},
-	app.ErrContestNotEmpty:   {"Ce concours contient encore des problèmes.", http.StatusConflict},
-	app.ErrContestNotStarted: {"Le concours n'a pas encore commencé.", http.StatusForbidden},
-	app.ErrContestFinished:   {"Le concours est terminé.", http.StatusForbidden},
-	app.ErrInvalidTimeRange:  {"La date de fin doit être postérieure à la date de début.", http.StatusBadRequest},
+	app.ErrContestNotFound:    {"Concours introuvable.", http.StatusNotFound},
+	app.ErrContestExists:      {"Un concours utilise déjà cet identifiant.", http.StatusConflict},
+	app.ErrContestNotEmpty:    {"Ce concours contient encore des problèmes.", http.StatusConflict},
+	app.ErrContestNotStarted:  {"Le concours n'a pas encore commencé.", http.StatusForbidden},
+	app.ErrContestFinished:    {"Le concours est terminé.", http.StatusForbidden},
+	app.ErrInvalidTimeRange:   {"La date de fin doit être postérieure à la date de début.", http.StatusBadRequest},
+	app.ErrInvalidContestMode: {"Mode de concours invalide.", http.StatusBadRequest},
 
 	app.ErrProblemNotFound:       {"Problème introuvable.", http.StatusNotFound},
 	app.ErrProblemExists:         {"Un problème utilise déjà cet identifiant.", http.StatusConflict},

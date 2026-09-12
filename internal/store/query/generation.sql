@@ -4,14 +4,20 @@ VALUES (?, ?, ?, 'queued', ?)
 RETURNING *;
 
 -- name: CreateGenerationTask :one
-INSERT INTO generation_tasks (run_id, problem_id, user_id, status, error, created_at, finished_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO generation_tasks (run_id, problem_id, user_id, shared, status, error, created_at, finished_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: HasActiveGenerationTask :one
 SELECT CAST(EXISTS (
     SELECT 1 FROM generation_tasks
-    WHERE problem_id = ? AND user_id = ? AND status IN ('queued', 'running')
+    WHERE problem_id = ? AND user_id = ? AND shared = FALSE AND status IN ('queued', 'running')
+) AS BOOLEAN);
+
+-- name: HasActiveSharedGenerationTask :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM generation_tasks
+    WHERE problem_id = ? AND shared = TRUE AND status IN ('queued', 'running')
 ) AS BOOLEAN);
 
 -- name: ClaimGenerationTask :one
@@ -24,10 +30,11 @@ RETURNING *;
 
 -- name: GetGenerationTaskDetail :one
 SELECT sqlc.embed(generation_tasks), sqlc.embed(generation_runs),
-       sqlc.embed(users), sqlc.embed(problems), sqlc.embed(contests)
+       COALESCE(users.username, 'free-play') AS username,
+       sqlc.embed(problems), sqlc.embed(contests)
 FROM generation_tasks
 JOIN generation_runs ON generation_runs.id = generation_tasks.run_id
-JOIN users ON users.id = generation_tasks.user_id
+LEFT JOIN users ON users.id = generation_tasks.user_id
 JOIN problems ON problems.id = generation_tasks.problem_id
 JOIN contests ON contests.id = problems.contest_id
 WHERE generation_tasks.id = ?;
@@ -109,9 +116,10 @@ JOIN contests ON contests.id = generation_runs.contest_id
 WHERE generation_runs.id = ?;
 
 -- name: ListGenerationTasksByRun :many
-SELECT generation_tasks.*, users.username, problems.name AS problem_name
+SELECT generation_tasks.*, COALESCE(users.username, 'Jeu libre') AS username,
+       problems.name AS problem_name
 FROM generation_tasks
-JOIN users ON users.id = generation_tasks.user_id
+LEFT JOIN users ON users.id = generation_tasks.user_id
 JOIN problems ON problems.id = generation_tasks.problem_id
 WHERE generation_tasks.run_id = ?
 ORDER BY generation_tasks.id;

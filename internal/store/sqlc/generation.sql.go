@@ -16,7 +16,7 @@ SET status = 'running', started_at = ?, finished_at = NULL, error = ''
 WHERE id = (
     SELECT id FROM generation_tasks WHERE status = 'queued' ORDER BY id LIMIT 1
 )
-RETURNING id, run_id, problem_id, user_id, status, error, created_at, started_at, finished_at
+RETURNING id, run_id, problem_id, user_id, shared, status, error, created_at, started_at, finished_at
 `
 
 func (q *Queries) ClaimGenerationTask(ctx context.Context, startedAt sql.NullInt64) (GenerationTask, error) {
@@ -27,6 +27,7 @@ func (q *Queries) ClaimGenerationTask(ctx context.Context, startedAt sql.NullInt
 		&i.RunID,
 		&i.ProblemID,
 		&i.UserID,
+		&i.Shared,
 		&i.Status,
 		&i.Error,
 		&i.CreatedAt,
@@ -71,15 +72,16 @@ func (q *Queries) CreateGenerationRun(ctx context.Context, arg CreateGenerationR
 }
 
 const createGenerationTask = `-- name: CreateGenerationTask :one
-INSERT INTO generation_tasks (run_id, problem_id, user_id, status, error, created_at, finished_at)
-VALUES (?, ?, ?, ?, ?, ?, ?)
-RETURNING id, run_id, problem_id, user_id, status, error, created_at, started_at, finished_at
+INSERT INTO generation_tasks (run_id, problem_id, user_id, shared, status, error, created_at, finished_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, run_id, problem_id, user_id, shared, status, error, created_at, started_at, finished_at
 `
 
 type CreateGenerationTaskParams struct {
 	RunID      int64
 	ProblemID  int64
-	UserID     int64
+	UserID     sql.NullInt64
+	Shared     bool
 	Status     string
 	Error      string
 	CreatedAt  int64
@@ -91,6 +93,7 @@ func (q *Queries) CreateGenerationTask(ctx context.Context, arg CreateGeneration
 		arg.RunID,
 		arg.ProblemID,
 		arg.UserID,
+		arg.Shared,
 		arg.Status,
 		arg.Error,
 		arg.CreatedAt,
@@ -102,6 +105,7 @@ func (q *Queries) CreateGenerationTask(ctx context.Context, arg CreateGeneration
 		&i.RunID,
 		&i.ProblemID,
 		&i.UserID,
+		&i.Shared,
 		&i.Status,
 		&i.Error,
 		&i.CreatedAt,
@@ -224,11 +228,12 @@ func (q *Queries) GetGenerationRun(ctx context.Context, id int64) (GetGeneration
 }
 
 const getGenerationTaskDetail = `-- name: GetGenerationTaskDetail :one
-SELECT generation_tasks.id, generation_tasks.run_id, generation_tasks.problem_id, generation_tasks.user_id, generation_tasks.status, generation_tasks.error, generation_tasks.created_at, generation_tasks.started_at, generation_tasks.finished_at, generation_runs.id, generation_runs.contest_id, generation_runs.source, generation_runs.mode, generation_runs.status, generation_runs.created_at, generation_runs.started_at, generation_runs.finished_at,
-       users.id, users.username, users.email, users.password_hash, users.activated, users.admin, users.created_at, problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate
+SELECT generation_tasks.id, generation_tasks.run_id, generation_tasks.problem_id, generation_tasks.user_id, generation_tasks.shared, generation_tasks.status, generation_tasks.error, generation_tasks.created_at, generation_tasks.started_at, generation_tasks.finished_at, generation_runs.id, generation_runs.contest_id, generation_runs.source, generation_runs.mode, generation_runs.status, generation_runs.created_at, generation_runs.started_at, generation_runs.finished_at,
+       COALESCE(users.username, 'free-play') AS username,
+       problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite
 FROM generation_tasks
 JOIN generation_runs ON generation_runs.id = generation_tasks.run_id
-JOIN users ON users.id = generation_tasks.user_id
+LEFT JOIN users ON users.id = generation_tasks.user_id
 JOIN problems ON problems.id = generation_tasks.problem_id
 JOIN contests ON contests.id = problems.contest_id
 WHERE generation_tasks.id = ?
@@ -237,7 +242,7 @@ WHERE generation_tasks.id = ?
 type GetGenerationTaskDetailRow struct {
 	GenerationTask GenerationTask
 	GenerationRun  GenerationRun
-	User           User
+	Username       string
 	Problem        Problem
 	Contest        Contest
 }
@@ -250,6 +255,7 @@ func (q *Queries) GetGenerationTaskDetail(ctx context.Context, id int64) (GetGen
 		&i.GenerationTask.RunID,
 		&i.GenerationTask.ProblemID,
 		&i.GenerationTask.UserID,
+		&i.GenerationTask.Shared,
 		&i.GenerationTask.Status,
 		&i.GenerationTask.Error,
 		&i.GenerationTask.CreatedAt,
@@ -263,13 +269,7 @@ func (q *Queries) GetGenerationTaskDetail(ctx context.Context, id int64) (GetGen
 		&i.GenerationRun.CreatedAt,
 		&i.GenerationRun.StartedAt,
 		&i.GenerationRun.FinishedAt,
-		&i.User.ID,
-		&i.User.Username,
-		&i.User.Email,
-		&i.User.PasswordHash,
-		&i.User.Activated,
-		&i.User.Admin,
-		&i.User.CreatedAt,
+		&i.Username,
 		&i.Problem.ID,
 		&i.Problem.ContestID,
 		&i.Problem.DifficultyID,
@@ -287,6 +287,8 @@ func (q *Queries) GetGenerationTaskDetail(ctx context.Context, id int64) (GetGen
 		&i.Contest.EndAt,
 		&i.Contest.Unlisted,
 		&i.Contest.AutoGenerate,
+		&i.Contest.Mode,
+		&i.Contest.Infinite,
 	)
 	return i, err
 }
@@ -294,17 +296,31 @@ func (q *Queries) GetGenerationTaskDetail(ctx context.Context, id int64) (GetGen
 const hasActiveGenerationTask = `-- name: HasActiveGenerationTask :one
 SELECT CAST(EXISTS (
     SELECT 1 FROM generation_tasks
-    WHERE problem_id = ? AND user_id = ? AND status IN ('queued', 'running')
+    WHERE problem_id = ? AND user_id = ? AND shared = FALSE AND status IN ('queued', 'running')
 ) AS BOOLEAN)
 `
 
 type HasActiveGenerationTaskParams struct {
 	ProblemID int64
-	UserID    int64
+	UserID    sql.NullInt64
 }
 
 func (q *Queries) HasActiveGenerationTask(ctx context.Context, arg HasActiveGenerationTaskParams) (bool, error) {
 	row := q.db.QueryRowContext(ctx, hasActiveGenerationTask, arg.ProblemID, arg.UserID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const hasActiveSharedGenerationTask = `-- name: HasActiveSharedGenerationTask :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM generation_tasks
+    WHERE problem_id = ? AND shared = TRUE AND status IN ('queued', 'running')
+) AS BOOLEAN)
+`
+
+func (q *Queries) HasActiveSharedGenerationTask(ctx context.Context, problemID int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, hasActiveSharedGenerationTask, problemID)
 	var column_1 bool
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -386,9 +402,10 @@ func (q *Queries) ListGenerationRuns(ctx context.Context, limit int64) ([]ListGe
 }
 
 const listGenerationTasksByRun = `-- name: ListGenerationTasksByRun :many
-SELECT generation_tasks.id, generation_tasks.run_id, generation_tasks.problem_id, generation_tasks.user_id, generation_tasks.status, generation_tasks.error, generation_tasks.created_at, generation_tasks.started_at, generation_tasks.finished_at, users.username, problems.name AS problem_name
+SELECT generation_tasks.id, generation_tasks.run_id, generation_tasks.problem_id, generation_tasks.user_id, generation_tasks.shared, generation_tasks.status, generation_tasks.error, generation_tasks.created_at, generation_tasks.started_at, generation_tasks.finished_at, COALESCE(users.username, 'Jeu libre') AS username,
+       problems.name AS problem_name
 FROM generation_tasks
-JOIN users ON users.id = generation_tasks.user_id
+LEFT JOIN users ON users.id = generation_tasks.user_id
 JOIN problems ON problems.id = generation_tasks.problem_id
 WHERE generation_tasks.run_id = ?
 ORDER BY generation_tasks.id
@@ -398,7 +415,8 @@ type ListGenerationTasksByRunRow struct {
 	ID          int64
 	RunID       int64
 	ProblemID   int64
-	UserID      int64
+	UserID      sql.NullInt64
+	Shared      bool
 	Status      string
 	Error       string
 	CreatedAt   int64
@@ -422,6 +440,7 @@ func (q *Queries) ListGenerationTasksByRun(ctx context.Context, runID int64) ([]
 			&i.RunID,
 			&i.ProblemID,
 			&i.UserID,
+			&i.Shared,
 			&i.Status,
 			&i.Error,
 			&i.CreatedAt,

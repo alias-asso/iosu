@@ -213,6 +213,10 @@ form.larger>.form--reverse>* {
   gap: 0.5rem;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .form--checkbox {
   display: flex;
   align-items: center;

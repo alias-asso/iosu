@@ -46,6 +46,29 @@ func (s *Server) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (s *Server) contestAccess(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		slug := r.PathValue("contest")
+		if slug == "" {
+			slug = r.PathValue("slug")
+		}
+		contest, err := s.app.Contest(r.Context(), slug)
+		if err != nil {
+			s.renderError(w, r, err)
+			return
+		}
+		if user, ok := s.authenticate(r); ok {
+			next(w, withUser(r, user))
+			return
+		}
+		if contest.Mode == app.ContestModeFreePlay {
+			next(w, r)
+			return
+		}
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+}
+
 func (s *Server) requireAdmin(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u, ok := s.authenticate(r)

@@ -24,6 +24,8 @@ type Contest struct {
 	EndAt        int64
 	Unlisted     bool
 	AutoGenerate bool
+	Mode         string
+	Infinite     bool
 }
 
 type Difficulty struct {
@@ -47,7 +49,8 @@ type GenerationTask struct {
 	ID         int64
 	RunID      int64
 	ProblemID  int64
-	UserID     int64
+	UserID     sql.NullInt64
+	Shared     bool
 	Status     string
 	Error      string
 	CreatedAt  int64
@@ -65,6 +68,17 @@ type Problem struct {
 	Parts            int64
 	PointsMultiplier float64
 	PointsAdder      int64
+}
+
+type ProblemFreePlayInput struct {
+	ProblemID int64
+	Input     string
+}
+
+type ProblemFreePlayOutput struct {
+	ProblemID int64
+	Part      int64
+	Output    string
 }
 
 type ProblemInput struct {

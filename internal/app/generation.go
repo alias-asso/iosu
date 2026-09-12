@@ -101,7 +101,9 @@ func (a *App) QueueProblemGeneration(ctx context.Context, problemSlug string, us
 
 func (a *App) createGenerationTask(ctx context.Context, q *sqlc.Queries, runID, problemID, userID int64, mode string) error {
 	status, message := "queued", ""
-	active, err := q.HasActiveGenerationTask(ctx, sqlc.HasActiveGenerationTaskParams{ProblemID: problemID, UserID: userID})
+	active, err := q.HasActiveGenerationTask(ctx, sqlc.HasActiveGenerationTaskParams{
+		ProblemID: problemID, UserID: sql.NullInt64{Int64: userID, Valid: true},
+	})
 	if err != nil {
 		return err
 	}
@@ -123,10 +125,58 @@ func (a *App) createGenerationTask(ctx context.Context, q *sqlc.Queries, runID, 
 		finished = sql.NullInt64{Int64: a.now().Unix(), Valid: true}
 	}
 	_, err = q.CreateGenerationTask(ctx, sqlc.CreateGenerationTaskParams{
-		RunID: runID, ProblemID: problemID, UserID: userID, Status: status,
+		RunID: runID, ProblemID: problemID, UserID: sql.NullInt64{Int64: userID, Valid: true}, Shared: false, Status: status,
 		Error: message, CreatedAt: a.now().Unix(), FinishedAt: finished,
 	})
 	return err
+}
+
+func (a *App) QueueFreePlayGeneration(ctx context.Context, contestSlug string) (int64, error) {
+	contest, err := a.Contest(ctx, contestSlug)
+	if err != nil {
+		return 0, err
+	}
+	if contest.Mode != ContestModeFreePlay {
+		return 0, ErrInvalidContestMode
+	}
+	problems, err := a.store.ListProblemsByContest(ctx, contest.ID)
+	if err != nil {
+		return 0, err
+	}
+	var runID int64
+	err = a.store.Tx(ctx, func(q *sqlc.Queries) error {
+		run, err := q.CreateGenerationRun(ctx, sqlc.CreateGenerationRunParams{
+			ContestID: contest.ID, Source: "manual", Mode: "replace", CreatedAt: a.now().Unix(),
+		})
+		if err != nil {
+			return err
+		}
+		runID = run.ID
+		for _, problem := range problems {
+			active, err := q.HasActiveSharedGenerationTask(ctx, problem.Problem.ID)
+			if err != nil {
+				return err
+			}
+			status, message := "queued", ""
+			finished := sql.NullInt64{}
+			if active {
+				status, message = "skipped", "Une génération est déjà en cours."
+				finished = sql.NullInt64{Int64: a.now().Unix(), Valid: true}
+			}
+			if _, err := q.CreateGenerationTask(ctx, sqlc.CreateGenerationTaskParams{
+				RunID: run.ID, ProblemID: problem.Problem.ID, Shared: true,
+				Status: status, Error: message, CreatedAt: a.now().Unix(), FinishedAt: finished,
+			}); err != nil {
+				return err
+			}
+		}
+		return a.finishGenerationRunIfIdle(ctx, q, run.ID)
+	})
+	if err != nil {
+		return 0, err
+	}
+	a.wakeGenerator()
+	return runID, nil
 }
 
 func (a *App) enqueueAutomaticGeneration(ctx context.Context, q *sqlc.Queries, userID int64) error {
@@ -224,7 +274,7 @@ func (a *App) runGenerationTask(ctx context.Context, cfg GenerationConfig, task 
 	if err == nil && detail.GenerationRun.Mode == "missing" {
 		var complete bool
 		complete, err = a.store.HasCompleteProblemData(ctx, sqlc.HasCompleteProblemDataParams{
-			ProblemID: detail.Problem.ID, UserID: detail.User.ID,
+			ProblemID: detail.Problem.ID, UserID: detail.GenerationTask.UserID.Int64,
 		})
 		if err == nil && complete {
 			a.completeGenerationTask(ctx, task, "skipped", "Les données sont déjà complètes.")
@@ -272,7 +322,7 @@ func (a *App) finishGenerationRunIfIdle(ctx context.Context, q *sqlc.Queries, ru
 
 func (a *App) generateProblemData(ctx context.Context, cfg GenerationConfig, detail sqlc.GetGenerationTaskDetailRow) error {
 	dir := a.problemDir(detail.Contest.Slug, detail.Problem.Slug)
-	input, err := runGeneratorScript(ctx, cfg, dir, "generate_input", detail.User.Username)
+	input, err := runGeneratorScript(ctx, cfg, dir, "generate_input", detail.Username)
 	if err != nil {
 		return err
 	}
@@ -285,7 +335,10 @@ func (a *App) generateProblemData(ctx context.Context, cfg GenerationConfig, det
 		}
 		outputs[i-1] = strings.TrimSpace(outputs[i-1])
 	}
-	return a.SetProblemData(ctx, detail.User.ID, detail.Problem.Slug, input, outputs)
+	if detail.GenerationTask.Shared {
+		return a.SetFreePlayData(ctx, detail.Problem.Slug, input, outputs)
+	}
+	return a.SetProblemData(ctx, detail.GenerationTask.UserID.Int64, detail.Problem.Slug, input, outputs)
 }
 
 var errGeneratorOutputTooLarge = errors.New("sortie trop volumineuse")

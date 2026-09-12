@@ -19,7 +19,18 @@
 			<label for="description">Description</label>
 			<textarea id="description" name="description">{{ .Page.Description }}</textarea>
 		</div>
-		<div class="form--reverse">
+		<div>
+			<label for="mode">Mode</label>
+			<select id="mode" name="mode">
+				<option value="normal"{{ if eq .Page.Mode "normal" }} selected{{ end }}>Concours</option>
+				<option value="free_play"{{ if eq .Page.Mode "free_play" }} selected{{ end }}>Jeu libre</option>
+			</select>
+		</div>
+		<label class="form--checkbox" for="infinite">
+			<input id="infinite" name="infinite" type="checkbox"{{ if .Page.Infinite }} checked{{ end }}>
+			Durée illimitée
+		</label>
+		<div id="contest-dates" class="form--reverse">
 			<div>
 				<label for="start-at">Début</label>
 				<input id="start-at" name="start-at" type="datetime-local" value="{{ .Page.StartAt }}" required>
@@ -33,11 +44,12 @@
 			<input id="unlisted" name="unlisted" type="checkbox"{{ if .Page.Unlisted }} checked{{ end }}>
 			Ne pas afficher ce concours dans les archives
 		</label>
-		<label class="form--checkbox" for="auto-generate">
+		<label id="auto-generate-field" class="form--checkbox" for="auto-generate">
 			<input id="auto-generate" name="auto-generate" type="checkbox"{{ if .Page.AutoGenerate }} checked{{ end }}>
 			Générer automatiquement les données des nouveaux comptes
 		</label>
 		<button class="btn" type="submit">{{ .Page.Submit }}</button>
 	</form>
+	<script src="/static/js/admin-contest-form.js"></script>
 </main>
 {{ end }}

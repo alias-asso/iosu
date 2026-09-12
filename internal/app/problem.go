@@ -249,7 +249,20 @@ func (a *App) ProblemStatement(ctx context.Context, userID int64, p ProblemDetai
 		return nil, err
 	}
 
-	visible := min(solved+1, p.Problem.Parts)
+	return a.problemParts(p, min(solved+1, p.Problem.Parts))
+}
+
+func (a *App) FreePlayProblemStatement(p ProblemDetail, visible int64) ([]template.HTML, error) {
+	if p.Contest.Mode != ContestModeFreePlay || visible < 1 || visible > p.Problem.Parts {
+		return nil, ErrInvalidPart
+	}
+	if err := a.contestWindow(p.Contest); err != nil {
+		return nil, err
+	}
+	return a.problemParts(p, visible)
+}
+
+func (a *App) problemParts(p ProblemDetail, visible int64) ([]template.HTML, error) {
 	dir := a.problemDir(p.Contest.Slug, p.Problem.Slug)
 	parts := make([]template.HTML, 0, visible)
 	for i := int64(1); i <= visible; i++ {
@@ -264,6 +277,20 @@ func (a *App) ProblemStatement(ctx context.Context, userID int64, p ProblemDetai
 		parts = append(parts, html)
 	}
 	return parts, nil
+}
+
+func (a *App) FreePlayInput(ctx context.Context, p ProblemDetail) (string, error) {
+	if p.Contest.Mode != ContestModeFreePlay {
+		return "", ErrInvalidContestMode
+	}
+	if err := a.contestWindow(p.Contest); err != nil {
+		return "", err
+	}
+	input, err := a.store.GetFreePlayInput(ctx, p.Problem.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrInputNotFound
+	}
+	return input, err
 }
 
 // ProblemInput returns the user's personal input for a problem.
@@ -305,6 +332,31 @@ func (a *App) SetProblemData(ctx context.Context, userID int64, problemSlug, inp
 				UserID:    userID,
 				Part:      int64(i + 1),
 				Output:    out,
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (a *App) SetFreePlayData(ctx context.Context, problemSlug, input string, outputs []string) error {
+	p, err := a.Problem(ctx, problemSlug)
+	if err != nil {
+		return err
+	}
+	if int64(len(outputs)) != p.Problem.Parts {
+		return fmt.Errorf("%w: got %d, want %d", ErrPartCountMismatch, len(outputs), p.Problem.Parts)
+	}
+	return a.store.Tx(ctx, func(q *sqlc.Queries) error {
+		if err := q.UpsertFreePlayInput(ctx, sqlc.UpsertFreePlayInputParams{
+			ProblemID: p.Problem.ID, Input: input,
+		}); err != nil {
+			return err
+		}
+		for i, output := range outputs {
+			if err := q.UpsertFreePlayOutput(ctx, sqlc.UpsertFreePlayOutputParams{
+				ProblemID: p.Problem.ID, Part: int64(i + 1), Output: output,
 			}); err != nil {
 				return err
 			}
@@ -374,6 +426,34 @@ func (a *App) Submit(ctx context.Context, in SubmitInput) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (a *App) SubmitFreePlay(ctx context.Context, contestSlug, problemSlug string, part int64, answer string) (bool, error) {
+	p, err := a.ProblemIn(ctx, contestSlug, problemSlug)
+	if err != nil {
+		return false, err
+	}
+	if p.Contest.Mode != ContestModeFreePlay {
+		return false, ErrInvalidContestMode
+	}
+	if err := a.contestWindow(p.Contest); err != nil {
+		return false, err
+	}
+	if part < 1 || part > p.Problem.Parts {
+		return false, ErrInvalidPart
+	}
+	expected, err := a.store.GetFreePlayOutput(ctx, sqlc.GetFreePlayOutputParams{
+		ProblemID: p.Problem.ID, Part: part,
+	})
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, ErrOutputNotFound
+	}
+	if err != nil {
+		return false, err
+	}
+	return subtle.ConstantTimeCompare(
+		[]byte(strings.TrimSpace(answer)), []byte(strings.TrimSpace(expected)),
+	) == 1, nil
 }
 
 // problemDir is where a problem's markdown and images live.

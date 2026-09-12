@@ -23,13 +23,13 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /activate/{code}", s.getActivate)
 	s.mux.HandleFunc("POST /activate", s.postActivate)
 
-	s.mux.HandleFunc("GET /contest/{slug}/", s.requireAuth(s.getContest))
-	s.mux.HandleFunc("GET /contest/{slug}/leaderboard", s.requireAuth(s.getLeaderboard))
+	s.mux.HandleFunc("GET /contest/{slug}/", s.contestAccess(s.getContest))
+	s.mux.HandleFunc("GET /contest/{slug}/leaderboard", s.contestAccess(s.getLeaderboard))
 
-	s.mux.HandleFunc("GET /contest/{contest}/{problem}/", s.requireAuth(s.getProblem))
-	s.mux.HandleFunc("GET /contest/{contest}/{problem}/input/", s.requireAuth(s.getInput))
-	s.mux.HandleFunc("GET /contest/{contest}/{problem}/img/{img}", s.requireAuth(s.getProblemImage))
-	s.mux.HandleFunc("POST /contest/{contest}/{problem}/submit/{part}", s.requireAuth(s.postSubmit))
+	s.mux.HandleFunc("GET /contest/{contest}/{problem}/", s.contestAccess(s.getProblem))
+	s.mux.HandleFunc("GET /contest/{contest}/{problem}/input/", s.contestAccess(s.getInput))
+	s.mux.HandleFunc("GET /contest/{contest}/{problem}/img/{img}", s.contestAccess(s.getProblemImage))
+	s.mux.HandleFunc("POST /contest/{contest}/{problem}/submit/{part}", s.contestAccess(s.postSubmit))
 
 	// The four static pages differ only in which markdown field they render.
 	s.mux.HandleFunc("GET /help", s.optionalAuth(s.markdownPage(func(c app.SiteConfig) string { return c.HelpContent })))
@@ -66,6 +66,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /admin/contests/{contest}/edit", s.requireAdmin(s.postAdminContestEdit))
 	s.mux.HandleFunc("GET /admin/contests/{contest}/delete", s.requireAdmin(s.getAdminContestDelete))
 	s.mux.HandleFunc("POST /admin/contests/{contest}/delete", s.requireAdmin(s.postAdminContestDelete))
+	s.mux.HandleFunc("POST /admin/contests/{contest}/generate-free-play", s.requireAdmin(s.postAdminContestFreePlayGeneration))
 	s.mux.HandleFunc("GET /admin/problems", s.requireAdmin(s.getAdminProblems))
 	s.mux.HandleFunc("GET /admin/problems/new", s.requireAdmin(s.getAdminProblemNew))
 	s.mux.HandleFunc("POST /admin/problems/new", s.requireAdmin(s.postAdminProblemNew))

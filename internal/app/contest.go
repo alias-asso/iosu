@@ -14,6 +14,11 @@ import (
 type ContestStatus string
 
 const (
+	ContestModeNormal   = "normal"
+	ContestModeFreePlay = "free_play"
+)
+
+const (
 	ContestUpcoming ContestStatus = "à venir"
 	ContestRunning  ContestStatus = "en cours"
 	ContestFinished ContestStatus = "terminé"
@@ -32,6 +37,8 @@ type CreateContestInput struct {
 	EndTime      time.Time
 	Unlisted     bool
 	AutoGenerate bool
+	Mode         string
+	Infinite     bool
 }
 
 // CreateContest records a contest and creates its directory under the data
@@ -43,7 +50,16 @@ func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest
 	if in.Name == "" || len(in.Name) > maxNameLen {
 		return Contest{}, ErrInvalidName
 	}
-	if in.EndTime.Before(in.StartTime) {
+	if in.Mode == "" {
+		in.Mode = ContestModeNormal
+	}
+	if in.Mode != ContestModeNormal && in.Mode != ContestModeFreePlay {
+		return Contest{}, ErrInvalidContestMode
+	}
+	if in.Mode == ContestModeFreePlay {
+		in.AutoGenerate = false
+	}
+	if !in.Infinite && in.EndTime.Before(in.StartTime) {
 		return Contest{}, ErrInvalidTimeRange
 	}
 
@@ -55,6 +71,8 @@ func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest
 		EndAt:        in.EndTime.Unix(),
 		Unlisted:     in.Unlisted,
 		AutoGenerate: in.AutoGenerate,
+		Mode:         in.Mode,
+		Infinite:     in.Infinite,
 	})
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -91,7 +109,13 @@ func (a *App) UpdateContest(ctx context.Context, in sqlc.UpdateContestParams) er
 	if in.Name.Valid && (in.Name.String == "" || len(in.Name.String) > maxNameLen) {
 		return ErrInvalidName
 	}
-	if in.StartAt.Valid && in.EndAt.Valid && in.EndAt.Int64 < in.StartAt.Int64 {
+	if in.Mode.Valid && in.Mode.String != ContestModeNormal && in.Mode.String != ContestModeFreePlay {
+		return ErrInvalidContestMode
+	}
+	if in.Mode.Valid && in.Mode.String == ContestModeFreePlay {
+		in.AutoGenerate = sql.NullBool{Bool: false, Valid: true}
+	}
+	if (!in.Infinite.Valid || !in.Infinite.Bool) && in.StartAt.Valid && in.EndAt.Valid && in.EndAt.Int64 < in.StartAt.Int64 {
 		return ErrInvalidTimeRange
 	}
 
@@ -162,6 +186,9 @@ func (a *App) Archive(ctx context.Context) ([]ArchiveEntry, error) {
 }
 
 func contestStatus(now int64, c Contest) ContestStatus {
+	if c.Infinite {
+		return ContestRunning
+	}
 	switch {
 	case now < c.StartAt:
 		return ContestUpcoming

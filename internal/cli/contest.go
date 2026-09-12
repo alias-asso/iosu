@@ -23,22 +23,34 @@ func contestCommands() []command {
 			name := fs.String("name", "", "contest name")
 			start := fs.String("start-time", "", "start time ("+timeLayout+")")
 			end := fs.String("end-time", "", "end time ("+timeLayout+")")
+			mode := fs.String("mode", app.ContestModeNormal, "contest mode (normal or free_play)")
+			infinite := fs.Bool("infinite", false, "run without start and end dates")
 			return func(ctx context.Context, a *app.App) error {
-				for f, v := range map[string]string{"slug": *slug, "name": *name, "start-time": *start, "end-time": *end} {
+				for f, v := range map[string]string{"slug": *slug, "name": *name} {
 					if err := required(f, v); err != nil {
 						return err
 					}
 				}
-				startAt, err := parseTime("start-time", *start)
-				if err != nil {
-					return err
-				}
-				endAt, err := parseTime("end-time", *end)
-				if err != nil {
-					return err
+				startAt, endAt := time.Unix(0, 0), time.Unix(0, 0)
+				if !*infinite {
+					for f, v := range map[string]string{"start-time": *start, "end-time": *end} {
+						if err := required(f, v); err != nil {
+							return err
+						}
+					}
+					var err error
+					startAt, err = parseTime("start-time", *start)
+					if err != nil {
+						return err
+					}
+					endAt, err = parseTime("end-time", *end)
+					if err != nil {
+						return err
+					}
 				}
 				c, err := a.CreateContest(ctx, app.CreateContestInput{
 					Slug: *slug, Name: *name, StartTime: startAt, EndTime: endAt,
+					Mode: *mode, Infinite: *infinite,
 				})
 				if err != nil {
 					return err
@@ -57,6 +69,8 @@ func contestCommands() []command {
 			start := fs.String("start-time", "", "new start time ("+timeLayout+")")
 			end := fs.String("end-time", "", "new end time ("+timeLayout+")")
 			unlisted := fs.Bool("unlisted", false, "hide the contest from the archive list")
+			mode := fs.String("mode", "", "new contest mode (normal or free_play)")
+			infinite := fs.Bool("infinite", false, "run without start and end dates")
 			return func(ctx context.Context, a *app.App) error {
 				if *id == 0 {
 					return fmt.Errorf("-id is required")
@@ -77,6 +91,8 @@ func contestCommands() []command {
 					StartAt:  startAt,
 					EndAt:    endAt,
 					Unlisted: setBool(*unlisted, set["unlisted"]),
+					Mode:     optStr(*mode),
+					Infinite: setBool(*infinite, set["infinite"]),
 				}); err != nil {
 					return err
 				}
@@ -94,9 +110,10 @@ func contestCommands() []command {
 					return err
 				}
 				w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-				fmt.Fprintln(w, "ID\tSLUG\tNAME\tSTART\tEND\tUNLISTED")
+				fmt.Fprintln(w, "ID\tSLUG\tNAME\tMODE\tINFINITE\tSTART\tEND\tUNLISTED")
 				for _, c := range contests {
-					fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%t\n", c.ID, c.Slug, c.Name,
+					fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%t\t%s\t%s\t%t\n", c.ID, c.Slug, c.Name,
+						c.Mode, c.Infinite,
 						time.Unix(c.StartAt, 0).Format(timeLayout),
 						time.Unix(c.EndAt, 0).Format(timeLayout),
 						c.Unlisted)

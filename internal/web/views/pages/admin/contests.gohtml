@@ -6,17 +6,19 @@
 	</div>
 	<div class="admin-table-wrapper">
 		<table class="admin-table">
-			<thead><tr><th scope="col">Concours</th><th scope="col">Visibilité</th><th scope="col">Génération automatique</th><th scope="col">Modifier</th><th scope="col">Supprimer</th></tr></thead>
+			<thead><tr><th scope="col">Concours</th><th scope="col">Mode</th><th scope="col">Durée</th><th scope="col">Visibilité</th><th scope="col">Génération</th><th scope="col">Modifier</th><th scope="col">Supprimer</th></tr></thead>
 			<tbody>
 			{{ range .Page }}
 			<tr>
 				<td><strong>{{ .Name }}</strong><small>{{ .Slug }}</small></td>
+				<td>{{ if eq .Mode "free_play" }}Jeu libre{{ else }}Concours{{ end }}</td>
+				<td>{{ if .Infinite }}Illimitée{{ else }}Planifiée{{ end }}</td>
 				<td>{{ if .Unlisted }}Non listé{{ else }}Listé{{ end }}</td>
-				<td>{{ if .AutoGenerate }}Activée{{ else }}Désactivée{{ end }}</td>
+				<td>{{ if eq .Mode "free_play" }}<form method="post" action="/admin/contests/{{ .Slug }}/generate-free-play"><button class="btn admin-table__button" type="submit">Générer les données</button></form>{{ else if .AutoGenerate }}Automatique{{ else }}Manuelle{{ end }}</td>
 				<td><a class="btn admin-table__button" href="/admin/contests/{{ .Slug }}/edit">Modifier</a></td>
 				<td><a class="btn btn--danger admin-table__button" href="/admin/contests/{{ .Slug }}/delete">Supprimer</a></td>
 			</tr>
-			{{ else }}<tr><td colspan="5">Aucun concours n'a été créé.</td></tr>{{ end }}
+			{{ else }}<tr><td colspan="7">Aucun concours n'a été créé.</td></tr>{{ end }}
 			</tbody>
 		</table>
 	</div>

@@ -222,6 +222,15 @@ func (s *Server) getContest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getLeaderboard(w http.ResponseWriter, r *http.Request) {
+	contest, err := s.app.Contest(r.Context(), r.PathValue("slug"))
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	if contest.Mode == app.ContestModeFreePlay {
+		http.Redirect(w, r, "/contest/"+contest.Slug+"/", http.StatusSeeOther)
+		return
+	}
 	board, err := s.app.Leaderboard(r.Context(), r.PathValue("slug"))
 	if err != nil {
 		s.renderError(w, r, err)
@@ -235,6 +244,8 @@ type problemPage struct {
 	Difficulty  app.Difficulty
 	SolvedParts int64
 	Content     []template.HTML
+	FreePlay    bool
+	CurrentPart int64
 }
 
 func (s *Server) getProblem(w http.ResponseWriter, r *http.Request) {
@@ -245,12 +256,22 @@ func (s *Server) getProblem(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, err)
 		return
 	}
-	solved, err := s.app.SolvedParts(r.Context(), user.ID, detail.Problem.ID)
-	if err != nil {
-		s.renderError(w, r, err)
-		return
+	var solved, currentPart int64
+	var parts []template.HTML
+	if detail.Contest.Mode == app.ContestModeFreePlay {
+		currentPart = 1
+		if value := r.URL.Query().Get("part"); value != "" {
+			currentPart, err = strconv.ParseInt(value, 10, 64)
+		}
+		if err == nil {
+			parts, err = s.app.FreePlayProblemStatement(detail, currentPart)
+		}
+	} else {
+		solved, err = s.app.SolvedParts(r.Context(), user.ID, detail.Problem.ID)
+		if err == nil {
+			parts, err = s.app.ProblemStatement(r.Context(), user.ID, detail)
+		}
 	}
-	parts, err := s.app.ProblemStatement(r.Context(), user.ID, detail)
 	if err != nil {
 		s.renderError(w, r, err)
 		return
@@ -261,6 +282,8 @@ func (s *Server) getProblem(w http.ResponseWriter, r *http.Request) {
 		Difficulty:  detail.Difficulty,
 		SolvedParts: solved,
 		Content:     parts,
+		FreePlay:    detail.Contest.Mode == app.ContestModeFreePlay,
+		CurrentPart: currentPart,
 	})
 }
 
@@ -272,7 +295,12 @@ func (s *Server) getInput(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, err)
 		return
 	}
-	input, err := s.app.ProblemInput(r.Context(), user.ID, detail)
+	var input string
+	if detail.Contest.Mode == app.ContestModeFreePlay {
+		input, err = s.app.FreePlayInput(r.Context(), detail)
+	} else {
+		input, err = s.app.ProblemInput(r.Context(), user.ID, detail)
+	}
 	if err != nil {
 		s.renderError(w, r, err)
 		return
@@ -298,6 +326,7 @@ type responseIndicator struct {
 	Error   string
 	Success bool
 	MaxPart bool
+	NextURL string
 }
 
 func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
@@ -309,6 +338,25 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	detail, err := s.app.ProblemIn(r.Context(), r.PathValue("contest"), r.PathValue("problem"))
+	if err != nil {
+		s.renderPartial(w, "response-indicator", responseIndicator{Error: "Problème introuvable."})
+		return
+	}
+	if detail.Contest.Mode == app.ContestModeFreePlay {
+		correct, err := s.app.SubmitFreePlay(r.Context(), detail.Contest.Slug, detail.Problem.Slug, part, r.FormValue("response"))
+		if err != nil {
+			message, _ := describe(err)
+			s.renderPartial(w, "response-indicator", responseIndicator{Error: message})
+			return
+		}
+		next := ""
+		if part < detail.Problem.Parts {
+			next = "?part=" + strconv.FormatInt(part+1, 10)
+		}
+		s.renderPartial(w, "response-indicator", responseIndicator{Success: correct, MaxPart: part == detail.Problem.Parts, NextURL: next})
+		return
+	}
 	in := app.SubmitInput{
 		UserID:      user.ID,
 		ContestSlug: r.PathValue("contest"),
@@ -331,7 +379,7 @@ func (s *Server) postSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	detail, err := s.app.Problem(r.Context(), in.ProblemSlug)
+	detail, err = s.app.Problem(r.Context(), in.ProblemSlug)
 	if err != nil {
 		// The answer was accepted; only the "is this the last part?" hint is lost.
 		s.renderPartial(w, "response-indicator", responseIndicator{Success: true})
@@ -581,6 +629,8 @@ type adminContestFormPage struct {
 	EndAt        string
 	Unlisted     bool
 	AutoGenerate bool
+	Mode         string
+	Infinite     bool
 	Error        string
 }
 
@@ -589,11 +639,12 @@ func (s *Server) getAdminContestNew(w http.ResponseWriter, r *http.Request) {
 		Title:  "Nouveau concours",
 		Action: "/admin/contests/new",
 		Submit: "Créer le concours",
+		Mode:   app.ContestModeNormal,
 	})
 }
 
 func (s *Server) postAdminContestNew(w http.ResponseWriter, r *http.Request) {
-	page, startAt, endAt, ok := s.adminContestForm(w, r, "/admin/contests/new")
+	page, startAt, endAt, ok := s.adminContestForm(w, r, "/admin/contests/new", time.Time{}, time.Time{})
 	if !ok {
 		return
 	}
@@ -605,6 +656,8 @@ func (s *Server) postAdminContestNew(w http.ResponseWriter, r *http.Request) {
 		EndTime:      endAt,
 		Unlisted:     page.Unlisted,
 		AutoGenerate: page.AutoGenerate,
+		Mode:         page.Mode,
+		Infinite:     page.Infinite,
 	}); err != nil {
 		s.renderAdminContestFormError(w, r, page, err)
 		return
@@ -627,7 +680,7 @@ func (s *Server) postAdminContestEdit(w http.ResponseWriter, r *http.Request) {
 		s.renderError(w, r, err)
 		return
 	}
-	page, startAt, endAt, ok := s.adminContestForm(w, r, "/admin/contests/"+contest.Slug+"/edit")
+	page, startAt, endAt, ok := s.adminContestForm(w, r, "/admin/contests/"+contest.Slug+"/edit", time.Unix(contest.StartAt, 0), time.Unix(contest.EndAt, 0))
 	if !ok {
 		return
 	}
@@ -640,6 +693,8 @@ func (s *Server) postAdminContestEdit(w http.ResponseWriter, r *http.Request) {
 		EndAt:        sql.NullInt64{Int64: endAt.Unix(), Valid: true},
 		Unlisted:     sql.NullBool{Bool: page.Unlisted, Valid: true},
 		AutoGenerate: sql.NullBool{Bool: page.AutoGenerate, Valid: true},
+		Mode:         sql.NullString{String: page.Mode, Valid: true},
+		Infinite:     sql.NullBool{Bool: page.Infinite, Valid: true},
 	}); err != nil {
 		s.renderAdminContestFormError(w, r, page, err)
 		return
@@ -647,7 +702,7 @@ func (s *Server) postAdminContestEdit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin/contests", http.StatusSeeOther)
 }
 
-func (s *Server) adminContestForm(w http.ResponseWriter, r *http.Request, action string) (adminContestFormPage, time.Time, time.Time, bool) {
+func (s *Server) adminContestForm(w http.ResponseWriter, r *http.Request, action string, fallbackStart, fallbackEnd time.Time) (adminContestFormPage, time.Time, time.Time, bool) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "formulaire invalide", http.StatusBadRequest)
 		return adminContestFormPage{}, time.Time{}, time.Time{}, false
@@ -663,10 +718,21 @@ func (s *Server) adminContestForm(w http.ResponseWriter, r *http.Request, action
 		EndAt:        r.FormValue("end-at"),
 		Unlisted:     r.Form.Has("unlisted"),
 		AutoGenerate: r.Form.Has("auto-generate"),
+		Mode:         r.FormValue("mode"),
+		Infinite:     r.Form.Has("infinite"),
 	}
 	if action == "/admin/contests/new" {
 		page.Title = "Nouveau concours"
 		page.Submit = "Créer le concours"
+	}
+	if page.Mode == "" {
+		page.Mode = app.ContestModeNormal
+	}
+	if page.Infinite {
+		if fallbackStart.IsZero() {
+			fallbackStart, fallbackEnd = time.Unix(0, 0), time.Unix(0, 0)
+		}
+		return page, fallbackStart, fallbackEnd, true
 	}
 	startAt, startErr := time.ParseInLocation(adminContestTimeLayout, page.StartAt, time.Local)
 	endAt, endErr := time.ParseInLocation(adminContestTimeLayout, page.EndAt, time.Local)
@@ -702,6 +768,8 @@ func editContestFormPage(contest app.Contest) adminContestFormPage {
 		EndAt:        time.Unix(contest.EndAt, 0).Format(adminContestTimeLayout),
 		Unlisted:     contest.Unlisted,
 		AutoGenerate: contest.AutoGenerate,
+		Mode:         contest.Mode,
+		Infinite:     contest.Infinite,
 	}
 }
 

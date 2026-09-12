@@ -9,7 +9,9 @@
       <li><a href="/help">Aide</a></li>
       <li><a href="/rules">Règles</a></li>
       {{ if .Config.CurrentContest }}
+      {{ if not .CurrentContestFreePlay }}
       <li><a href="/contest/{{ .Config.CurrentContest }}/leaderboard">Classement</a></li>
+      {{ end }}
       <li><a href="/contest/{{ .Config.CurrentContest }}/">Problèmes</a></li>
       {{ end }}
       {{ if .IsAdmin }}

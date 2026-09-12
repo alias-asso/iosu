@@ -104,11 +104,34 @@ ON CONFLICT (problem_id, user_id) DO UPDATE SET input = excluded.input;
 INSERT INTO problem_outputs (problem_id, user_id, part, output) VALUES (?, ?, ?, ?)
 ON CONFLICT (problem_id, user_id, part) DO UPDATE SET output = excluded.output;
 
+-- name: UpsertFreePlayInput :exec
+INSERT INTO problem_free_play_inputs (problem_id, input) VALUES (?, ?)
+ON CONFLICT (problem_id) DO UPDATE SET input = excluded.input;
+
+-- name: UpsertFreePlayOutput :exec
+INSERT INTO problem_free_play_outputs (problem_id, part, output) VALUES (?, ?, ?)
+ON CONFLICT (problem_id, part) DO UPDATE SET output = excluded.output;
+
 -- name: GetProblemInput :one
 SELECT input FROM problem_inputs WHERE problem_id = ? AND user_id = ?;
 
 -- name: GetProblemOutput :one
 SELECT output FROM problem_outputs WHERE problem_id = ? AND user_id = ? AND part = ?;
+
+-- name: GetFreePlayInput :one
+SELECT input FROM problem_free_play_inputs WHERE problem_id = ?;
+
+-- name: GetFreePlayOutput :one
+SELECT output FROM problem_free_play_outputs WHERE problem_id = ? AND part = ?;
+
+-- name: HasCompleteFreePlayData :one
+SELECT CAST(EXISTS (
+    SELECT 1 FROM problems p
+    WHERE p.id = ?
+      AND EXISTS (SELECT 1 FROM problem_free_play_inputs WHERE problem_id = p.id)
+      AND (SELECT COUNT(DISTINCT part) FROM problem_free_play_outputs
+           WHERE problem_id = p.id AND part BETWEEN 1 AND p.parts) = p.parts
+) AS BOOLEAN);
 
 -- name: GetSolvedParts :one
 SELECT CAST(COALESCE((SELECT parts FROM solves WHERE user_id = ? AND problem_id = ?), 0) AS INTEGER);

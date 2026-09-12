@@ -5,7 +5,7 @@
   <p class="subtitle">Par {{ .Page.Problem.Author }}</p>
   <p class="subtitle">Difficulté : {{ .Page.Difficulty.Name }}</p>
   <div class="btns">
-    <a href="./input/" class="btn">Votre input</a>
+    <a href="./input/" class="btn">{{ if .Page.FreePlay }}Input{{ else }}Votre input{{ end }}</a>
   </div>
 </div>
 {{ end }}
@@ -15,7 +15,7 @@
   {{ $part }}
   {{ end }}
 
-  {{ if eq .Page.SolvedParts .Page.Problem.Parts }}
+  {{ if and (not .Page.FreePlay) (eq .Page.SolvedParts .Page.Problem.Parts) }}
   <p>Vous avez déjà résolu ce problème.</p>
   {{ else }}
   <br />
@@ -23,7 +23,7 @@
 
   <div class="response-target"></div>
   <p>Votre réponse :</p>
-  <form hx-post="./submit/{{ len .Page.Content }}" hx-target=".response-target" hx-swap="innerHTML">
+  <form hx-post="./submit/{{ if .Page.FreePlay }}{{ .Page.CurrentPart }}{{ else }}{{ len .Page.Content }}{{ end }}" hx-target=".response-target" hx-swap="innerHTML">
     <input type="text" placeholder="123..." name="response" />
     <button type="submit" class="btn">Vérifier</button>
   </form>

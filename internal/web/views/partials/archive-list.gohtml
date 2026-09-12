@@ -3,7 +3,6 @@
   {{ range . }}
   <article>
     <h3>{{ .Contest.Name | salmond }}</h3>
-    <p class="subtitle">{{ .Status }}</p>
     <div class="btns">
       <a href="/contest/{{ .Contest.Slug }}/" class="btn">Voir le concours</a>
     </div>

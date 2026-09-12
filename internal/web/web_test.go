@@ -180,6 +180,56 @@ func TestProtectedRoutesRedirectAnonymousVisitors(t *testing.T) {
 	}
 }
 
+func TestFreePlayContestIsPublicAndStateless(t *testing.T) {
+	ts := newTestServer(t)
+	if _, err := ts.app.CreateContest(t.Context(), app.CreateContestInput{
+		Slug: "replay", Name: "Replay", Mode: app.ContestModeFreePlay, Infinite: true,
+	}); err != nil {
+		t.Fatalf("contest: %v", err)
+	}
+	if _, err := ts.app.CreateProblem(t.Context(), app.CreateProblemInput{
+		ContestSlug: "replay", DifficultyName: "facile", Slug: "free",
+		Name: "Free", Parts: 2, PointsMultiplier: 1,
+	}); err != nil {
+		t.Fatalf("problem: %v", err)
+	}
+	for part := 1; part <= 2; part++ {
+		path := filepath.Join(ts.cfg.DataDir, "replay", "free", "part"+strconv.Itoa(part)+".md")
+		if err := os.WriteFile(path, []byte("# free part "+strconv.Itoa(part)), 0o644); err != nil {
+			t.Fatalf("statement: %v", err)
+		}
+	}
+	if err := ts.app.SetFreePlayData(t.Context(), "free", "shared-input", []string{"first", "second"}); err != nil {
+		t.Fatalf("shared data: %v", err)
+	}
+	alice := ts.user("alice")
+
+	for _, path := range []string{"/contest/replay/", "/contest/replay/free/", "/contest/replay/free/input/"} {
+		if rec := ts.get(path, nil); rec.Code != http.StatusOK {
+			t.Fatalf("GET %s: status=%d body=%s", path, rec.Code, rec.Body.String())
+		}
+	}
+	if body := ts.get("/contest/replay/free/input/", nil).Body.String(); body != "shared-input" {
+		t.Fatalf("input=%q", body)
+	}
+	rec := ts.postForm("/contest/replay/free/submit/1", url.Values{"response": {"wrong"}}, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Mauvaise réponse") {
+		t.Fatalf("wrong answer: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.postForm("/contest/replay/free/submit/1", url.Values{"response": {"first"}}, nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Bonne réponse") || !strings.Contains(rec.Body.String(), "?part=2") {
+		t.Fatalf("correct answer: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	rec = ts.get("/contest/replay/free/?part=2", nil)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "free part 2") {
+		t.Fatalf("part 2: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	detail, _ := ts.app.Problem(t.Context(), "free")
+	if solved, err := ts.app.SolvedParts(t.Context(), alice.ID, detail.Problem.ID); err != nil || solved != 0 {
+		t.Fatalf("solved=%d err=%v", solved, err)
+	}
+}
+
 func TestPublicRoutesAreReachableAnonymously(t *testing.T) {
 	ts := newTestServer(t)
 	for _, path := range []string{"/", "/login", "/help", "/rules", "/legal", "/credits"} {
@@ -721,6 +771,50 @@ func TestAdminContestAutoGenerationOption(t *testing.T) {
 	}
 }
 
+func TestAdminCreatesInfiniteFreePlayAndGeneratesAllProblems(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	rec := ts.get("/admin/contests/new", &admin)
+	for _, want := range []string{`name="mode"`, `value="free_play"`, `name="infinite"`, `id="auto-generate-field"`, `/static/js/admin-contest-form.js`} {
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("contest form does not contain %q: %s", want, rec.Body.String())
+		}
+	}
+	rec = ts.postForm("/admin/contests/new", url.Values{
+		"slug": {"replay"}, "name": {"Replay"}, "mode": {"free_play"}, "infinite": {"on"},
+		"auto-generate": {"on"},
+	}, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("create free play: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	contest, err := ts.app.Contest(t.Context(), "replay")
+	if err != nil || contest.Mode != app.ContestModeFreePlay || !contest.Infinite || contest.AutoGenerate {
+		t.Fatalf("contest=%+v err=%v", contest, err)
+	}
+	if runs, err := ts.app.GenerationRuns(t.Context(), 10); err != nil || len(runs) != 0 {
+		t.Fatalf("generation ran on contest creation: runs=%+v err=%v", runs, err)
+	}
+	if _, err := ts.app.CreateProblem(t.Context(), app.CreateProblemInput{
+		ContestSlug: "replay", DifficultyName: "facile", Slug: "replay-one",
+		Name: "Replay One", Parts: 1, PointsMultiplier: 1,
+	}); err != nil {
+		t.Fatalf("problem: %v", err)
+	}
+	rec = ts.get("/admin/contests", &admin)
+	action := "/admin/contests/replay/generate-free-play"
+	if !strings.Contains(rec.Body.String(), `action="`+action+`"`) {
+		t.Fatalf("contest list has no generate action: %s", rec.Body.String())
+	}
+	rec = ts.postForm(action, nil, &admin)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("generate all: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	run, tasks, err := ts.app.GenerationRun(t.Context(), 1)
+	if err != nil || run.ContestID != contest.ID || len(tasks) != 1 || !tasks[0].Shared {
+		t.Fatalf("run=%+v tasks=%+v err=%v", run, tasks, err)
+	}
+}
+
 func TestAdminUserPromotionAndDeletionRequireConfirmation(t *testing.T) {
 	ts := newTestServer(t)
 	admin := ts.admin("root")
@@ -1065,6 +1159,9 @@ func TestArchiveIsPublic(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "Alpha") {
 		t.Errorf("archive does not list the contest: %s", rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "en cours") {
+		t.Errorf("archive shows the running status: %s", rec.Body.String())
 	}
 }
 
