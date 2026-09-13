@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// seedProblem sets up a one-contest, one-problem world with data for alice.
 func seedProblem(t *testing.T, parts int64, outputs []string) (*fixture, User) {
 	t.Helper()
 	f := newFixture(t)

@@ -39,9 +39,6 @@ func TestMigrateFromEmpty(t *testing.T) {
 	}
 }
 
-// A database left behind at an older version must pick up only the migrations
-// it is missing. This is what keeps a deployed db.sqlite in step with the
-// schema sqlc generates against.
 func TestMigrateFromAnOlderVersion(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "old.sqlite")
 

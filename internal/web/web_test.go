@@ -30,8 +30,6 @@ type testServer struct {
 	t   *testing.T
 }
 
-// newTestServer builds a server over a scratch database holding one open
-// contest ("alpha") with a single two-part problem ("one").
 func newTestServer(t *testing.T) *testServer {
 	t.Helper()
 	dir := t.TempDir()
@@ -74,7 +72,6 @@ func newTestServer(t *testing.T) *testServer {
 	return &testServer{Server: srv, app: a, t: t}
 }
 
-// user creates an activated account with a personal input and answers.
 func (ts *testServer) user(username string) app.User {
 	ts.t.Helper()
 	ctx := ts.t.Context()
@@ -115,7 +112,6 @@ func (ts *testServer) admin(username string) app.User {
 	return u
 }
 
-// do runs a request through the full handler chain.
 func (ts *testServer) do(req *http.Request, as *app.User) *httptest.ResponseRecorder {
 	ts.t.Helper()
 	if as != nil {
@@ -1108,7 +1104,6 @@ func TestErrorsAreShownInFrenchWithoutInternals(t *testing.T) {
 	}
 }
 
-// setCurrentContest points the site config at slug, or clears it when empty.
 func (ts *testServer) setCurrentContest(slug string) {
 	ts.t.Helper()
 	if err := ts.app.UpdateSiteConfig(ts.t.Context(), sqlc.UpdateSiteConfigParams{

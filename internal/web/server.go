@@ -1,4 +1,3 @@
-// Package web serves the site: routing, session handling and HTML rendering.
 package web
 
 import (
@@ -44,7 +43,6 @@ func (s *Server) Handler() http.Handler {
 	return recoverPanic(securityHeaders(limitBody(s.mux)))
 }
 
-// Start listens until the returned server is shut down.
 func (s *Server) Start(port string) error {
 	srv := &http.Server{
 		Addr:              ":" + port,
@@ -109,7 +107,6 @@ var salmondReplacer = strings.NewReplacer(
 
 func salmondText(text string) string { return salmondReplacer.Replace(text) }
 
-// name turns "views/pages/index.gohtml" into "index".
 func name(path string) string {
 	base := path[len("views/"):]
 	return base[:len(base)-len(".gohtml")]

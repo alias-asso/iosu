@@ -25,7 +25,6 @@ type CreateProblemInput struct {
 	PointsAdder      int64
 }
 
-// CreateProblem records a problem and creates its directory under the contest.
 func (a *App) CreateProblem(ctx context.Context, in CreateProblemInput) (Problem, error) {
 	if !validSlug(in.Slug) {
 		return Problem{}, ErrInvalidSlug
@@ -76,7 +75,6 @@ func (a *App) CreateProblem(ctx context.Context, in CreateProblemInput) (Problem
 	return problem, nil
 }
 
-// UpdateProblem applies the non-nil fields of in to an existing problem.
 func (a *App) UpdateProblem(ctx context.Context, in sqlc.UpdateProblemParams) error {
 	if in.Slug.Valid && !validSlug(in.Slug.String) {
 		return ErrInvalidSlug
@@ -116,7 +114,6 @@ func (a *App) UpdateProblemDifficulty(ctx context.Context, in sqlc.UpdateProblem
 	return a.UpdateProblem(ctx, in)
 }
 
-// Problem looks up a problem with its contest and difficulty.
 func (a *App) Problem(ctx context.Context, slug string) (ProblemDetail, error) {
 	if len(slug) > maxSlugLen {
 		return ProblemDetail{}, ErrProblemNotFound
@@ -216,7 +213,6 @@ func (a *App) Problems(ctx context.Context, contestSlug string) ([]ProblemInList
 	return a.store.ListProblemsByContest(ctx, contest.ID)
 }
 
-// CreateDifficulty adds a difficulty tier.
 func (a *App) CreateDifficulty(ctx context.Context, name string, points int64) error {
 	if name == "" || len(name) > maxDifficultyLen {
 		return ErrInvalidName
@@ -228,12 +224,10 @@ func (a *App) CreateDifficulty(ctx context.Context, name string, points int64) e
 	return err
 }
 
-// Difficulties lists the available difficulty tiers by increasing score.
 func (a *App) Difficulties(ctx context.Context) ([]Difficulty, error) {
 	return a.store.ListDifficulties(ctx)
 }
 
-// SolvedParts is how many parts of a problem the user has completed.
 func (a *App) SolvedParts(ctx context.Context, userID, problemID int64) (int64, error) {
 	return a.store.GetSolvedParts(ctx, sqlc.GetSolvedPartsParams{UserID: userID, ProblemID: problemID})
 }
@@ -293,7 +287,6 @@ func (a *App) FreePlayInput(ctx context.Context, p ProblemDetail) (string, error
 	return input, err
 }
 
-// ProblemInput returns the user's personal input for a problem.
 func (a *App) ProblemInput(ctx context.Context, userID int64, p ProblemDetail) (string, error) {
 	if err := a.contestWindow(p.Contest); err != nil {
 		return "", err
@@ -308,7 +301,6 @@ func (a *App) ProblemInput(ctx context.Context, userID int64, p ProblemDetail) (
 	return input, err
 }
 
-// SetProblemData stores one user's input and the expected output of every part.
 func (a *App) SetProblemData(ctx context.Context, userID int64, problemSlug, input string, outputs []string) error {
 	p, err := a.Problem(ctx, problemSlug)
 	if err != nil {
@@ -456,7 +448,6 @@ func (a *App) SubmitFreePlay(ctx context.Context, contestSlug, problemSlug strin
 	) == 1, nil
 }
 
-// problemDir is where a problem's markdown and images live.
 func (a *App) problemDir(contestSlug, problemSlug string) string {
 	return filepath.Join(a.dataDir, contestSlug, problemSlug)
 }

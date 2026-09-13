@@ -1,4 +1,3 @@
-// Command iosu administers the contest platform from the server's shell.
 package main
 
 import (

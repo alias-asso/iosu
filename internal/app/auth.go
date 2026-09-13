@@ -46,7 +46,6 @@ func (a *App) Authenticate(ctx context.Context, username, password string) (User
 	return user, nil
 }
 
-// User looks up a user by ID.
 func (a *App) User(ctx context.Context, id int64) (User, error) {
 	user, err := a.store.GetUser(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -55,7 +54,6 @@ func (a *App) User(ctx context.Context, id int64) (User, error) {
 	return user, err
 }
 
-// UserByUsername looks up a user by name.
 func (a *App) UserByUsername(ctx context.Context, username string) (User, error) {
 	user, err := a.store.GetUserByUsername(ctx, username)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -132,8 +130,6 @@ func (a *App) EnsureAdmin(ctx context.Context, password string) (created bool, e
 	return true, nil
 }
 
-// SetPassword replaces a user's password. This is how an admin password gets
-// rotated.
 func (a *App) SetPassword(ctx context.Context, username, password string) error {
 	if !ValidPassword(password) {
 		return ErrWeakPassword
@@ -152,7 +148,6 @@ func (a *App) SetPassword(ctx context.Context, username, password string) error 
 	})
 }
 
-// SetAdmin grants or revokes admin rights.
 func (a *App) SetAdmin(ctx context.Context, username string, admin bool) error {
 	user, err := a.UserByUsername(ctx, username)
 	if err != nil {
@@ -161,7 +156,6 @@ func (a *App) SetAdmin(ctx context.Context, username string, admin bool) error {
 	return a.store.SetUserAdmin(ctx, sqlc.SetUserAdminParams{Admin: admin, ID: user.ID})
 }
 
-// Register creates an unactivated account and returns its activation code.
 func (a *App) Register(ctx context.Context, username, email string) (string, error) {
 	if err := validUserDetails(username, email); err != nil {
 		return "", err
@@ -361,7 +355,6 @@ func (a *App) ActivationCode(ctx context.Context, code string) (sqlc.GetActivati
 	return row, nil
 }
 
-// PendingActivations lists accounts that have not been activated yet.
 func (a *App) PendingActivations(ctx context.Context) ([]PendingUser, error) {
 	return a.store.ListPendingActivations(ctx)
 }
@@ -399,8 +392,6 @@ func (a *App) Activate(ctx context.Context, code, password string) error {
 	})
 }
 
-// Leaderboard returns the scores for one contest, highest first. Users with no
-// points are left out.
 func (a *App) Leaderboard(ctx context.Context, contestSlug string) ([]Leaderboarder, error) {
 	contest, err := a.Contest(ctx, contestSlug)
 	if err != nil {
@@ -416,8 +407,6 @@ var passwordChecks = []*regexp.Regexp{
 	regexp.MustCompile(`[^A-Za-z0-9]`),
 }
 
-// ValidPassword reports whether a password meets the length and character-class
-// requirements.
 func ValidPassword(s string) bool {
 	if len(s) < minPasswordLen || len(s) > maxPasswordLen {
 		return false

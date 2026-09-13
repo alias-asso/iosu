@@ -41,8 +41,6 @@ type CreateContestInput struct {
 	Infinite     bool
 }
 
-// CreateContest records a contest and creates its directory under the data
-// directory.
 func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest, error) {
 	if in.Slug == "new" || !validSlug(in.Slug) {
 		return Contest{}, ErrInvalidSlug
@@ -87,7 +85,6 @@ func (a *App) CreateContest(ctx context.Context, in CreateContestInput) (Contest
 	return contest, nil
 }
 
-// Contest looks up a contest by slug.
 func (a *App) Contest(ctx context.Context, slug string) (Contest, error) {
 	contest, err := a.store.GetContestBySlug(ctx, slug)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -96,12 +93,10 @@ func (a *App) Contest(ctx context.Context, slug string) (Contest, error) {
 	return contest, err
 }
 
-// Contests lists every contest, most recent first.
 func (a *App) Contests(ctx context.Context) ([]Contest, error) {
 	return a.store.ListContests(ctx)
 }
 
-// UpdateContest applies the non-nil fields of in to an existing contest.
 func (a *App) UpdateContest(ctx context.Context, in sqlc.UpdateContestParams) error {
 	if in.Slug.Valid && (in.Slug.String == "new" || !validSlug(in.Slug.String)) {
 		return ErrInvalidSlug

@@ -8,7 +8,6 @@ import (
 	"github.com/alias-asso/iosu/internal/app"
 )
 
-// layoutData is what every full page template receives.
 type layoutData struct {
 	LoggedIn               bool
 	IsAdmin                bool
@@ -57,7 +56,6 @@ func (s *Server) renderWith(w http.ResponseWriter, r *http.Request, page string,
 	}
 }
 
-// renderPartial writes an htmx fragment.
 func (s *Server) renderPartial(w http.ResponseWriter, partial string, data any) {
 	tpl, ok := s.templates["partials/"+partial]
 	if !ok {
@@ -77,7 +75,6 @@ func (s *Server) renderPartial(w http.ResponseWriter, partial string, data any) 
 	}
 }
 
-// renderError shows the error page with the French message for err.
 func (s *Server) renderError(w http.ResponseWriter, r *http.Request, err error) {
 	msg, status := describe(err)
 	if status == http.StatusInternalServerError {

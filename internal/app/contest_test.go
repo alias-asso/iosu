@@ -9,8 +9,6 @@ import (
 	"github.com/alias-asso/iosu/internal/store/sqlc"
 )
 
-// window creates a contest running between the two offsets from the fixture
-// clock.
 func (f *fixture) window(slug string, start, end time.Duration) Contest {
 	f.t.Helper()
 	c, err := f.CreateContest(f.ctx(), CreateContestInput{

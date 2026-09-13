@@ -1,5 +1,3 @@
-// Package app holds the domain logic shared by the web server and the CLI.
-// It sits directly on *store.Store; there is no repository indirection.
 package app
 
 import (
@@ -59,8 +57,6 @@ func New(s *store.Store, dataDir string) *App {
 	return &App{store: s, dataDir: dataDir, now: time.Now, generationWake: make(chan struct{}, 64)}
 }
 
-// Store exposes the underlying store for the few callers that legitimately
-// need a raw query (the CLI's listing commands).
 func (a *App) Store() *store.Store { return a.store }
 
 // slugPattern keeps slugs safe to use as a path segment. Problem and contest
@@ -71,7 +67,6 @@ func validSlug(s string) bool {
 	return s != "" && len(s) <= maxSlugLen && slugPattern.MatchString(s)
 }
 
-// contestWindow reports whether the contest is currently open.
 func (a *App) contestWindow(c Contest) error {
 	if c.Infinite {
 		return nil

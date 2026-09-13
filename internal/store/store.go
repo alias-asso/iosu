@@ -1,6 +1,3 @@
-// Package store owns the database: connection, schema migrations and the
-// sqlc-generated queries. Everything above it talks to *Store, never to
-// database/sql directly.
 package store
 
 import (
@@ -21,15 +18,11 @@ import (
 //go:embed migrations/*.sql
 var migrations embed.FS
 
-// Store is the only handle on the database. The embedded *sqlc.Queries makes
-// every generated query available directly on it.
 type Store struct {
 	*sqlc.Queries
 	db *sql.DB
 }
 
-// Open connects to the SQLite database at path and brings it up to the latest
-// schema version.
 func Open(path string) (*Store, error) {
 	dsn := "file:" + path + "?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)"
 	db, err := sql.Open("sqlite", dsn)
@@ -126,7 +119,6 @@ func (s *Store) applyMigration(n int, body string) error {
 	return tx.Commit()
 }
 
-// migrationNumber parses the leading number of a "001_name.sql" filename.
 func migrationNumber(name string) (int, error) {
 	prefix, _, ok := strings.Cut(name, "_")
 	if !ok {

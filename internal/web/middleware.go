@@ -15,7 +15,6 @@ const userKey ctxKey = iota
 
 const maxBodyBytes = 1 << 20
 
-// Returns the authenticated user, if any.
 func userFrom(r *http.Request) (app.User, bool) {
 	u, ok := r.Context().Value(userKey).(app.User)
 	return u, ok
@@ -25,7 +24,6 @@ func withUser(r *http.Request, u app.User) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), userKey, u))
 }
 
-// Auth but still allow if not authenticated
 func (s *Server) optionalAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if u, ok := s.authenticate(r); ok {
@@ -100,7 +98,6 @@ func (s *Server) authenticate(r *http.Request) (app.User, bool) {
 	return user, true
 }
 
-// Keep bad requests from taking down the process
 func recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {

@@ -1,4 +1,3 @@
-// Command iosud serves the contest website.
 package main
 
 import (

@@ -1,4 +1,3 @@
-// Package cli implements the iosu administration command.
 package cli
 
 import (
@@ -31,7 +30,6 @@ func commands() []command {
 	return cmds
 }
 
-// Main runs the CLI and returns the process exit code.
 func Main(args []string) int {
 	cmds := commands()
 
@@ -72,7 +70,6 @@ func Main(args []string) int {
 	return 0
 }
 
-// match finds the command whose two-word name starts args.
 func match(cmds []command, args []string) (command, []string, bool) {
 	if len(args) < 2 {
 		return command{}, nil, false
