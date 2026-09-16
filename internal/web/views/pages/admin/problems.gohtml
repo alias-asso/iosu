@@ -5,6 +5,7 @@
 		<a class="btn btn--large" href="/admin/problems/new">Nouveau problème</a>
 	</div>
 	{{ range .Page }}
+	{{ $freePlay := eq .Contest.Mode "free_play" }}
 	<section class="admin-problem-section">
 		<h2>{{ .Contest.Name | salmond }}</h2>
 		<div class="admin-table-wrapper">
@@ -13,12 +14,12 @@
 				<tbody>
 				{{ range .Problems }}
 				<tr>
-					<td><strong>{{ .Problem.Name }}</strong><small>{{ .Problem.Slug }}</small></td>
+					<td><strong>{{ .Problem.Name }}</strong><small>{{ .Problem.Slug }}</small>{{ if .Problem.Hidden }}<small>Masqué</small>{{ end }}</td>
 					<td>{{ .Difficulty.Name }}</td>
 					<td>{{ .Problem.Parts }}</td>
 					<td><ul class="admin-table__status-list">{{ range .PartFiles }}<li{{ if not .Present }} class="danger"{{ end }}>Partie {{ .Number }} : {{ if .Present }}présent{{ else }}manquant{{ end }}</li>{{ end }}</ul></td>
 					<td><ul class="admin-table__status-list">{{ range .GeneratorFiles }}<li{{ if not .Executable }} class="danger"{{ end }}>{{ .Name }} : {{ if .Executable }}exécutable{{ else if .Present }}non exécutable{{ else }}manquant{{ end }}</li>{{ end }}</ul></td>
-					<td><a href="/admin/problems/{{ .Problem.Slug }}/users">{{ .CompleteUsers }} {{ if eq .CompleteUsers 1 }}utilisateur{{ else }}utilisateurs{{ end }}</a></td>
+					<td>{{ if $freePlay }}<form method="post" action="/admin/problems/{{ .Problem.Slug }}/generate-free-play"><button class="btn admin-table__button" type="submit">Générer les données</button></form>{{ else }}<a href="/admin/problems/{{ .Problem.Slug }}/users">{{ .CompleteUsers }} {{ if eq .CompleteUsers 1 }}utilisateur{{ else }}utilisateurs{{ end }}</a>{{ end }}</td>
 					<td><a class="btn admin-table__button" href="/admin/problems/{{ .Problem.Slug }}/edit">Modifier</a></td>
 					<td><a class="btn btn--danger admin-table__button" href="/admin/problems/{{ .Problem.Slug }}/delete">Supprimer</a></td>
 				</tr>

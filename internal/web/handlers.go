@@ -314,6 +314,10 @@ func (s *Server) getInput(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) getProblemImage(w http.ResponseWriter, r *http.Request) {
+	if _, err := s.app.ProblemIn(r.Context(), r.PathValue("contest"), r.PathValue("problem")); err != nil {
+		s.renderError(w, r, err)
+		return
+	}
 	path, err := s.app.ProblemImage(r.PathValue("contest"), r.PathValue("problem"), r.PathValue("img"))
 	if err != nil {
 		http.NotFound(w, r)
@@ -849,6 +853,7 @@ func (s *Server) getAdminProblems(w http.ResponseWriter, r *http.Request) {
 }
 
 type adminProblemFormPage struct {
+	Hidden           bool
 	Title            string
 	Action           string
 	Submit           string
@@ -888,6 +893,7 @@ func (s *Server) postAdminProblemNew(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := s.app.CreateProblem(r.Context(), app.CreateProblemInput{
+		Hidden:      page.Hidden,
 		ContestSlug: page.ContestSlug, DifficultyName: page.Difficulty.Selected,
 		Slug: page.Slug, Name: page.Name, Author: page.Author, Parts: parts,
 		PointsMultiplier: multiplier, PointsAdder: adder,
@@ -925,6 +931,7 @@ func (s *Server) postAdminProblemEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = s.app.UpdateProblemDifficulty(r.Context(), sqlc.UpdateProblemParams{
+		Hidden:           sql.NullBool{Bool: page.Hidden, Valid: true},
 		ID:               problem.Problem.ID,
 		Name:             sql.NullString{String: page.Name, Valid: true},
 		Author:           sql.NullString{String: page.Author, Valid: true},
@@ -957,6 +964,7 @@ func (s *Server) postAdminProblemDelete(w http.ResponseWriter, r *http.Request) 
 }
 
 func (s *Server) readAdminProblemForm(r *http.Request, page *adminProblemFormPage) {
+	page.Hidden = r.FormValue("hidden") == "on"
 	page.ContestSlug = r.FormValue("contest")
 	page.Slug = r.FormValue("slug")
 	page.Name = r.FormValue("name")
@@ -1016,7 +1024,8 @@ func (s *Server) renderAdminProblemFormError(w http.ResponseWriter, r *http.Requ
 
 func editProblemFormPage(problem app.ProblemDetail) adminProblemFormPage {
 	return adminProblemFormPage{
-		Title: "Modifier le probleme", Action: "/admin/problems/" + problem.Problem.Slug + "/edit", Submit: "Enregistrer",
+		Hidden: problem.Problem.Hidden,
+		Title:  "Modifier le probleme", Action: "/admin/problems/" + problem.Problem.Slug + "/edit", Submit: "Enregistrer",
 		ContestSlug: problem.Contest.Slug, ContestName: problem.Contest.Name,
 		Slug: problem.Problem.Slug, Name: problem.Problem.Name, Author: problem.Problem.Author,
 		Parts:            strconv.FormatInt(problem.Problem.Parts, 10),

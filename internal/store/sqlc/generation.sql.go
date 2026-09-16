@@ -230,7 +230,7 @@ func (q *Queries) GetGenerationRun(ctx context.Context, id int64) (GetGeneration
 const getGenerationTaskDetail = `-- name: GetGenerationTaskDetail :one
 SELECT generation_tasks.id, generation_tasks.run_id, generation_tasks.problem_id, generation_tasks.user_id, generation_tasks.shared, generation_tasks.status, generation_tasks.error, generation_tasks.created_at, generation_tasks.started_at, generation_tasks.finished_at, generation_runs.id, generation_runs.contest_id, generation_runs.source, generation_runs.mode, generation_runs.status, generation_runs.created_at, generation_runs.started_at, generation_runs.finished_at,
        COALESCE(users.username, 'free-play') AS username,
-       problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite
+       problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, problems.hidden, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite
 FROM generation_tasks
 JOIN generation_runs ON generation_runs.id = generation_tasks.run_id
 LEFT JOIN users ON users.id = generation_tasks.user_id
@@ -279,6 +279,7 @@ func (q *Queries) GetGenerationTaskDetail(ctx context.Context, id int64) (GetGen
 		&i.Problem.Parts,
 		&i.Problem.PointsMultiplier,
 		&i.Problem.PointsAdder,
+		&i.Problem.Hidden,
 		&i.Contest.ID,
 		&i.Contest.Slug,
 		&i.Contest.Name,

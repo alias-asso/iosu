@@ -811,6 +811,154 @@ func TestAdminCreatesInfiniteFreePlayAndGeneratesAllProblems(t *testing.T) {
 	}
 }
 
+func TestAdminHiddenProblems(t *testing.T) {
+	for _, mode := range []string{app.ContestModeNormal, app.ContestModeFreePlay} {
+		t.Run(mode, func(t *testing.T) {
+			ts := newTestServer(t)
+			admin := ts.admin("root")
+			alice := ts.user("alice")
+			if _, err := ts.app.CreateContest(t.Context(), app.CreateContestInput{
+				Slug: "hidden-test", Name: "Hidden test", Mode: mode,
+				StartTime: time.Now().Add(-time.Hour), EndTime: time.Now().Add(time.Hour),
+			}); err != nil {
+				t.Fatal(err)
+			}
+			form := url.Values{
+				"contest": {"hidden-test"}, "slug": {"secret"}, "name": {"Secret"},
+				"difficulty": {"facile"}, "parts": {"1"}, "points-multiplier": {"1"},
+				"points-adder": {"0"}, "hidden": {"on"},
+			}
+			rec := ts.postForm("/admin/problems/new", form, &admin)
+			if rec.Code != http.StatusSeeOther {
+				t.Fatalf("create hidden problem: status=%d body=%s", rec.Code, rec.Body.String())
+			}
+			problem, err := ts.app.Problem(t.Context(), "secret")
+			if err != nil || !problem.Problem.Hidden {
+				t.Fatalf("new problem is not hidden: problem=%+v err=%v", problem, err)
+			}
+			dir := filepath.Join(ts.cfg.DataDir, "hidden-test", "secret")
+			if err := os.WriteFile(filepath.Join(dir, "part1.md"), []byte("Secret statement"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.MkdirAll(filepath.Join(dir, "img"), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dir, "img", "test.svg"), []byte("<svg></svg>"), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			if err := ts.app.SetProblemData(t.Context(), alice.ID, "secret", "input", []string{"answer"}); err != nil {
+				t.Fatal(err)
+			}
+			if err := ts.app.SetFreePlayData(t.Context(), "secret", "input", []string{"answer"}); err != nil {
+				t.Fatal(err)
+			}
+			viewer := &alice
+			if mode == app.ContestModeFreePlay {
+				viewer = nil
+			}
+			for _, hidden := range []bool{true, false, true} {
+				if hidden {
+					form.Set("hidden", "on")
+				} else {
+					form.Del("hidden")
+				}
+				rec = ts.postForm("/admin/problems/secret/edit", form, &admin)
+				if rec.Code != http.StatusSeeOther {
+					t.Fatalf("edit problem: status=%d body=%s", rec.Code, rec.Body.String())
+				}
+				rec = ts.get("/admin/problems/secret/edit", &admin)
+				if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), `name="hidden" type="checkbox" checked`) != hidden {
+					t.Fatalf("hidden checkbox not persisted: status=%d body=%s", rec.Code, rec.Body.String())
+				}
+				rec = ts.get("/admin/problems", &admin)
+				if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Secret") || strings.Contains(rec.Body.String(), "Masqué") != hidden {
+					t.Fatalf("admin problem list: status=%d body=%s", rec.Code, rec.Body.String())
+				}
+				rec = ts.get("/contest/hidden-test/", viewer)
+				if rec.Code != http.StatusOK || strings.Contains(rec.Body.String(), "/contest/hidden-test/secret/") == hidden {
+					t.Fatalf("contest visibility: hidden=%v status=%d body=%s", hidden, rec.Code, rec.Body.String())
+				}
+				want := http.StatusOK
+				if hidden {
+					want = http.StatusNotFound
+				}
+				for _, suffix := range []string{"", "input/", "img/test.svg"} {
+					rec = ts.get("/contest/hidden-test/secret/"+suffix, viewer)
+					if rec.Code != want {
+						t.Fatalf("GET %s: hidden=%v status=%d body=%s", suffix, hidden, rec.Code, rec.Body.String())
+					}
+				}
+				if hidden {
+					rec = ts.postForm("/contest/hidden-test/secret/submit/1", url.Values{"response": {"answer"}}, viewer)
+					if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Problème introuvable.") {
+						t.Fatalf("hidden submission: status=%d body=%s", rec.Code, rec.Body.String())
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestAdminGeneratesSingleFreePlayProblem(t *testing.T) {
+	ts := newTestServer(t)
+	admin := ts.admin("root")
+	alice := ts.user("alice")
+	if _, err := ts.app.CreateContest(t.Context(), app.CreateContestInput{
+		Slug: "replay", Name: "Replay", Mode: app.ContestModeFreePlay, Infinite: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	for _, slug := range []string{"shared-one", "shared-two"} {
+		if _, err := ts.app.CreateProblem(t.Context(), app.CreateProblemInput{
+			ContestSlug: "replay", DifficultyName: "facile", Slug: slug,
+			Name: slug, Parts: 2, PointsMultiplier: 1,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	action := "/admin/problems/shared-one/generate-free-play"
+	rec := ts.get("/admin/problems", &admin)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `action="`+action+`"`) {
+		t.Fatalf("problem generation button: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), `/admin/problems/one/generate-free-play`) {
+		t.Fatal("normal problem has a free-play generation button")
+	}
+	for _, user := range []*app.User{nil, &alice} {
+		rec = ts.postForm(action, nil, user)
+		if rec.Code != http.StatusSeeOther && rec.Code != http.StatusForbidden {
+			t.Fatalf("unauthorized generation: status=%d", rec.Code)
+		}
+	}
+	for _, slug := range []string{"one", "unknown"} {
+		rec = ts.postForm("/admin/problems/"+slug+"/generate-free-play", nil, &admin)
+		want := http.StatusBadRequest
+		if slug == "unknown" {
+			want = http.StatusNotFound
+		}
+		if rec.Code != want {
+			t.Fatalf("invalid problem %s: status=%d body=%s", slug, rec.Code, rec.Body.String())
+		}
+	}
+	if runs, err := ts.app.GenerationRuns(t.Context(), 10); err != nil || len(runs) != 0 {
+		t.Fatalf("invalid request created runs: runs=%+v err=%v", runs, err)
+	}
+	for _, status := range []string{"queued", "skipped"} {
+		rec = ts.postForm(action, nil, &admin)
+		if rec.Code != http.StatusSeeOther {
+			t.Fatalf("generate problem: status=%d body=%s", rec.Code, rec.Body.String())
+		}
+		id, err := strconv.ParseInt(strings.TrimPrefix(rec.Header().Get("Location"), "/admin/generations/"), 10, 64)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, tasks, err := ts.app.GenerationRun(t.Context(), id)
+		if err != nil || len(tasks) != 1 || tasks[0].ProblemName != "shared-one" || !tasks[0].Shared || tasks[0].UserID.Valid || tasks[0].Status != status {
+			t.Fatalf("single problem generation: tasks=%+v err=%v", tasks, err)
+		}
+	}
+}
+
 func TestAdminUserPromotionAndDeletionRequireConfirmation(t *testing.T) {
 	ts := newTestServer(t)
 	admin := ts.admin("root")

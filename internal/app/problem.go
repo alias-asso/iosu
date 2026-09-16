@@ -15,6 +15,7 @@ import (
 )
 
 type CreateProblemInput struct {
+	Hidden           bool
 	ContestSlug      string
 	DifficultyName   string
 	Slug             string
@@ -53,6 +54,7 @@ func (a *App) CreateProblem(ctx context.Context, in CreateProblemInput) (Problem
 	}
 
 	problem, err := a.store.CreateProblem(ctx, sqlc.CreateProblemParams{
+		Hidden:           in.Hidden,
 		ContestID:        contest.ID,
 		DifficultyID:     difficulty.ID,
 		Slug:             in.Slug,
@@ -187,14 +189,14 @@ func (a *App) DeleteProblem(ctx context.Context, slug string) error {
 	return nil
 }
 
-// ProblemIn looks up a problem and checks it belongs to the named contest,
+// ProblemIn looks up a visible problem and checks it belongs to the named contest,
 // which is what the URL claims.
 func (a *App) ProblemIn(ctx context.Context, contestSlug, problemSlug string) (ProblemDetail, error) {
 	p, err := a.Problem(ctx, problemSlug)
 	if err != nil {
 		return p, err
 	}
-	if p.Contest.Slug != contestSlug {
+	if p.Contest.Slug != contestSlug || p.Problem.Hidden {
 		return ProblemDetail{}, ErrProblemNotFound
 	}
 	return p, nil
@@ -210,7 +212,17 @@ func (a *App) Problems(ctx context.Context, contestSlug string) ([]ProblemInList
 	if err := a.contestWindow(contest); err != nil {
 		return nil, err
 	}
-	return a.store.ListProblemsByContest(ctx, contest.ID)
+	problems, err := a.store.ListProblemsByContest(ctx, contest.ID)
+	if err != nil {
+		return nil, err
+	}
+	visible := problems[:0]
+	for _, problem := range problems {
+		if !problem.Problem.Hidden {
+			visible = append(visible, problem)
+		}
+	}
+	return visible, nil
 }
 
 func (a *App) CreateDifficulty(ctx context.Context, name string, points int64) error {

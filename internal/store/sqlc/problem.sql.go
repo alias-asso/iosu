@@ -27,9 +27,9 @@ func (q *Queries) CreateDifficulty(ctx context.Context, arg CreateDifficultyPara
 }
 
 const createProblem = `-- name: CreateProblem :one
-INSERT INTO problems (contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder
+INSERT INTO problems (contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder, hidden)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder, hidden
 `
 
 type CreateProblemParams struct {
@@ -41,6 +41,7 @@ type CreateProblemParams struct {
 	Parts            int64
 	PointsMultiplier float64
 	PointsAdder      int64
+	Hidden           bool
 }
 
 func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (Problem, error) {
@@ -53,6 +54,7 @@ func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (P
 		arg.Parts,
 		arg.PointsMultiplier,
 		arg.PointsAdder,
+		arg.Hidden,
 	)
 	var i Problem
 	err := row.Scan(
@@ -65,6 +67,7 @@ func (q *Queries) CreateProblem(ctx context.Context, arg CreateProblemParams) (P
 		&i.Parts,
 		&i.PointsMultiplier,
 		&i.PointsAdder,
+		&i.Hidden,
 	)
 	return i, err
 }
@@ -120,7 +123,7 @@ func (q *Queries) GetFreePlayOutput(ctx context.Context, arg GetFreePlayOutputPa
 }
 
 const getProblemBySlug = `-- name: GetProblemBySlug :one
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, problems.hidden, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests     ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -146,6 +149,7 @@ func (q *Queries) GetProblemBySlug(ctx context.Context, slug string) (GetProblem
 		&i.Problem.Parts,
 		&i.Problem.PointsMultiplier,
 		&i.Problem.PointsAdder,
+		&i.Problem.Hidden,
 		&i.Contest.ID,
 		&i.Contest.Slug,
 		&i.Contest.Name,
@@ -259,7 +263,7 @@ func (q *Queries) HasCompleteProblemData(ctx context.Context, arg HasCompletePro
 }
 
 const listCompleteProblemsByUser = `-- name: ListCompleteProblemsByUser :many
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, problems.hidden, contests.id, contests.slug, contests.name, contests.description, contests.start_at, contests.end_at, contests.unlisted, contests.auto_generate, contests.mode, contests.infinite, difficulties.id, difficulties.name, difficulties.points
 FROM problems
 JOIN contests ON contests.id = problems.contest_id
 JOIN difficulties ON difficulties.id = problems.difficulty_id
@@ -299,6 +303,7 @@ func (q *Queries) ListCompleteProblemsByUser(ctx context.Context, userID int64) 
 			&i.Problem.Parts,
 			&i.Problem.PointsMultiplier,
 			&i.Problem.PointsAdder,
+			&i.Problem.Hidden,
 			&i.Contest.ID,
 			&i.Contest.Slug,
 			&i.Contest.Name,
@@ -400,7 +405,7 @@ func (q *Queries) ListDifficulties(ctx context.Context) ([]Difficulty, error) {
 }
 
 const listProblemsByContest = `-- name: ListProblemsByContest :many
-SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, difficulties.id, difficulties.name, difficulties.points, CAST((
+SELECT problems.id, problems.contest_id, problems.difficulty_id, problems.slug, problems.name, problems.author, problems.parts, problems.points_multiplier, problems.points_adder, problems.hidden, difficulties.id, difficulties.name, difficulties.points, CAST((
     SELECT COUNT(*)
     FROM users u
     WHERE EXISTS (
@@ -443,6 +448,7 @@ func (q *Queries) ListProblemsByContest(ctx context.Context, contestID int64) ([
 			&i.Problem.Parts,
 			&i.Problem.PointsMultiplier,
 			&i.Problem.PointsAdder,
+			&i.Problem.Hidden,
 			&i.Difficulty.ID,
 			&i.Difficulty.Name,
 			&i.Difficulty.Points,
@@ -469,8 +475,9 @@ UPDATE problems SET
     parts             = COALESCE(?4, parts),
     points_multiplier = COALESCE(?5, points_multiplier),
     points_adder      = COALESCE(?6, points_adder),
-    difficulty_id     = COALESCE(?7, difficulty_id)
-WHERE id = ?8
+    difficulty_id     = COALESCE(?7, difficulty_id),
+    hidden            = COALESCE(?8, hidden)
+WHERE id = ?9
 `
 
 type UpdateProblemParams struct {
@@ -481,6 +488,7 @@ type UpdateProblemParams struct {
 	PointsMultiplier sql.NullFloat64
 	PointsAdder      sql.NullInt64
 	DifficultyID     sql.NullInt64
+	Hidden           sql.NullBool
 	ID               int64
 }
 
@@ -493,6 +501,7 @@ func (q *Queries) UpdateProblem(ctx context.Context, arg UpdateProblemParams) (i
 		arg.PointsMultiplier,
 		arg.PointsAdder,
 		arg.DifficultyID,
+		arg.Hidden,
 		arg.ID,
 	)
 	if err != nil {

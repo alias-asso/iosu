@@ -8,8 +8,8 @@ SELECT * FROM difficulties WHERE name = ?;
 SELECT * FROM difficulties ORDER BY points, name;
 
 -- name: CreateProblem :one
-INSERT INTO problems (contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO problems (contest_id, difficulty_id, slug, name, author, parts, points_multiplier, points_adder, hidden)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetProblemBySlug :one
@@ -90,7 +90,8 @@ UPDATE problems SET
     parts             = COALESCE(sqlc.narg('parts'), parts),
     points_multiplier = COALESCE(sqlc.narg('points_multiplier'), points_multiplier),
     points_adder      = COALESCE(sqlc.narg('points_adder'), points_adder),
-    difficulty_id     = COALESCE(sqlc.narg('difficulty_id'), difficulty_id)
+    difficulty_id     = COALESCE(sqlc.narg('difficulty_id'), difficulty_id),
+    hidden            = COALESCE(sqlc.narg('hidden'), hidden)
 WHERE id = sqlc.arg('id');
 
 -- name: DeleteProblem :execrows

@@ -75,6 +75,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /admin/problems/{problem}/delete", s.requireAdmin(s.getAdminProblemDelete))
 	s.mux.HandleFunc("POST /admin/problems/{problem}/delete", s.requireAdmin(s.postAdminProblemDelete))
 	s.mux.HandleFunc("GET /admin/problems/{problem}/users", s.requireAdmin(s.getAdminProblemUsers))
+	s.mux.HandleFunc("POST /admin/problems/{problem}/generate-free-play", s.requireAdmin(s.postAdminProblemFreePlayGeneration))
 	s.mux.HandleFunc("POST /admin/problems/{problem}/users/{user}/generate", s.requireAdmin(s.postAdminProblemUserGeneration))
 	s.mux.HandleFunc("GET /admin/difficulties", s.requireAdmin(s.getAdminDifficultySelector))
 	s.mux.HandleFunc("POST /admin/difficulties", s.requireAdmin(s.postAdminDifficulty))

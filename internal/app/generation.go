@@ -143,17 +143,36 @@ func (a *App) QueueFreePlayGeneration(ctx context.Context, contestSlug string) (
 	if err != nil {
 		return 0, err
 	}
+	problemIDs := make([]int64, len(problems))
+	for i, problem := range problems {
+		problemIDs[i] = problem.Problem.ID
+	}
+	return a.queueFreePlayGeneration(ctx, contest.ID, problemIDs)
+}
+
+func (a *App) QueueFreePlayProblemGeneration(ctx context.Context, problemSlug string) (int64, error) {
+	problem, err := a.Problem(ctx, problemSlug)
+	if err != nil {
+		return 0, err
+	}
+	if problem.Contest.Mode != ContestModeFreePlay {
+		return 0, ErrInvalidContestMode
+	}
+	return a.queueFreePlayGeneration(ctx, problem.Contest.ID, []int64{problem.Problem.ID})
+}
+
+func (a *App) queueFreePlayGeneration(ctx context.Context, contestID int64, problemIDs []int64) (int64, error) {
 	var runID int64
-	err = a.store.Tx(ctx, func(q *sqlc.Queries) error {
+	err := a.store.Tx(ctx, func(q *sqlc.Queries) error {
 		run, err := q.CreateGenerationRun(ctx, sqlc.CreateGenerationRunParams{
-			ContestID: contest.ID, Source: "manual", Mode: "replace", CreatedAt: a.now().Unix(),
+			ContestID: contestID, Source: "manual", Mode: "replace", CreatedAt: a.now().Unix(),
 		})
 		if err != nil {
 			return err
 		}
 		runID = run.ID
-		for _, problem := range problems {
-			active, err := q.HasActiveSharedGenerationTask(ctx, problem.Problem.ID)
+		for _, problemID := range problemIDs {
+			active, err := q.HasActiveSharedGenerationTask(ctx, problemID)
 			if err != nil {
 				return err
 			}
@@ -164,7 +183,7 @@ func (a *App) QueueFreePlayGeneration(ctx context.Context, contestSlug string) (
 				finished = sql.NullInt64{Int64: a.now().Unix(), Valid: true}
 			}
 			if _, err := q.CreateGenerationTask(ctx, sqlc.CreateGenerationTaskParams{
-				RunID: run.ID, ProblemID: problem.Problem.ID, Shared: true,
+				RunID: run.ID, ProblemID: problemID, Shared: true,
 				Status: status, Error: message, CreatedAt: a.now().Unix(), FinishedAt: finished,
 			}); err != nil {
 				return err

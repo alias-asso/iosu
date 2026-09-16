@@ -68,6 +68,7 @@ type Problem struct {
 	Parts            int64
 	PointsMultiplier float64
 	PointsAdder      int64
+	Hidden           bool
 }
 
 type ProblemFreePlayInput struct {

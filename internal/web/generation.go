@@ -215,6 +215,15 @@ func (s *Server) postAdminContestFreePlayGeneration(w http.ResponseWriter, r *ht
 	http.Redirect(w, r, "/admin/generations/"+strconv.FormatInt(runID, 10), http.StatusSeeOther)
 }
 
+func (s *Server) postAdminProblemFreePlayGeneration(w http.ResponseWriter, r *http.Request) {
+	runID, err := s.app.QueueFreePlayProblemGeneration(r.Context(), r.PathValue("problem"))
+	if err != nil {
+		s.renderError(w, r, err)
+		return
+	}
+	http.Redirect(w, r, "/admin/generations/"+strconv.FormatInt(runID, 10), http.StatusSeeOther)
+}
+
 func generationSource(source string) string {
 	if source == "automatic" {
 		return "Automatique"

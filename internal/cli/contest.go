@@ -156,8 +156,8 @@ func importData(ctx context.Context, a *app.App, contestSlug, dir string) error 
 		}
 		problemSlug := pd.Name()
 
-		problem, err := a.ProblemIn(ctx, contestSlug, problemSlug)
-		if err != nil {
+		problem, err := a.Problem(ctx, problemSlug)
+		if err != nil || problem.Contest.Slug != contestSlug {
 			fmt.Fprintf(os.Stderr, "skipping %s: not a problem of contest %s\n", problemSlug, contestSlug)
 			skipped++
 			continue
