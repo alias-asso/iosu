@@ -43,33 +43,7 @@ iosu user passwd -username admin
 
 ## Administration
 
-Run `iosu` for the full list. The usual sequence for a new contest:
-
-```sh
-iosu difficulty create -name facile -points 10
-iosu contest create -slug 2026 -name "IO/SU 2026" \
-    -start-time "2026-03-25 18:00:00" -end-time "2026-03-27 20:00:00"
-iosu problem create -contest 2026 -slug your-slug -name "Full Name" \
-    -difficulty moyen -author problem_author -parts 1
-iosu user batch-create -i participants.csv     # CSV with username,email columns
-iosu user pending -url https://iosu.example.org # activation links to send out
-iosu config update -site-title "IO/SU" -current-contest 2026
-iosu config import -help help.md -rules rules.md
-```
-
-Per-contestant inputs and answers are produced outside the platform and imported
-from a directory tree:
-
-```
-<directory>/<problem-slug>/<username>/input.txt
-                                     /output1.txt, output2.txt, ...
-```
-
-```sh
-iosu contest data -contest 2026 -directory ./generated
-```
-
-Re-running the import overwrites what is already stored.
+TODO
 
 ## Development
 
